@@ -4,54 +4,54 @@
 //==================================================================//
 //=====================< OCTOBATTLE - settings >====================//
 //=============================<general>============================//
-private const bool SHOW_SETTINGS = true;							// set to "true" to announce settings in the beginning
-private const bool GIB_ON_LEAVE = true;								// set to "true" to gib players when they leave
+private const bool SHOW_SETTINGS = true;			    // set to "true" to announce settings in the beginning
+private const bool GIB_ON_LEAVE = true;				    // set to "true" to gib players when they leave
 //==========================<hardcore mode>=========================//
-private const bool HARDCORE_ACTIVATED = false;						// set to "true" to enable hardcore mode
-private const float HC_GUNS_MULTIPLIER = (float) 2.0;				// damage multiplier for guns
-private const float HC_MELEE_MULTIPLIER = (float) 2.0;				// damage multiplier for melee
-private const float HC_FALL_MULTIPLIER = (float) 3.5;				// damage multiplier for fall
-private const float HC_FIRE_MULTIPLIER = (float) 3.0;				// damage multiplier for fire
-private const float HC_EXPL_MULTIPLIER = (float) 2.0;				// damage multiplier for explosions
-private const bool HC_BLOCK_DAMAGE = true;							// set to "true" to make blocked attacks damage players
-private const float HC_BLOCK_DAMAGE_AMOUNT = (float) 3;				// damage in HP given by blocked attack
-private const bool HC_BLEEDING = true;								// set te "true" to enable bleeding on getting some damage
-private const bool HC_BLEEDING_ON_START = false;					// set te "true" to make people bleed in the very beginning
-private const int HC_BLEEDING_CHANCE = 3;							// bleeding will start with chance "1/x" where x is this variable
-private const float HC_BLEEDING_TRIGGER_HP = (float) 20;			// damage in hp after that bleeding will start find a chance
-private const bool HC_CANT_PUT_FIRE_OFF = false;					// set to "true" to disallow players to roll to stop burning
-//private const bool HC_WEAPONS_BREAK = false;						// set to "true" to allow weapons to break [WIP]
+private const bool HARDCORE_ACTIVATED = false;			    // set to "true" to enable hardcore mode
+private const float HC_GUNS_MULTIPLIER = (float) 2.0;		    // damage multiplier for guns
+private const float HC_MELEE_MULTIPLIER = (float) 2.0;		    // damage multiplier for melee
+private const float HC_FALL_MULTIPLIER = (float) 3.5;		    // damage multiplier for fall
+private const float HC_FIRE_MULTIPLIER = (float) 3.0;		    // damage multiplier for fire
+private const float HC_EXPL_MULTIPLIER = (float) 2.0;		    // damage multiplier for explosions
+private const bool HC_BLOCK_DAMAGE = true;			    // set to "true" to make blocked attacks damage players
+private const float HC_BLOCK_DAMAGE_AMOUNT = (float) 3;		    // damage in HP given by blocked attack
+private const bool HC_BLEEDING = true;				    // set te "true" to enable bleeding on getting some damage
+private const bool HC_BLEEDING_ON_START = false;		    // set te "true" to make people bleed in the very beginning
+private const int HC_BLEEDING_CHANCE = 3;			    // bleeding will start with chance "1/x" where x is this variable
+private const float HC_BLEEDING_TRIGGER_HP = (float) 20;	    // damage in hp after that bleeding will start find a chance
+private const bool HC_CANT_PUT_FIRE_OFF = false;		    // set to "true" to disallow players to roll to stop burning
+//private const bool HC_WEAPONS_BREAK = false;			    // set to "true" to allow weapons to break [WIP]
 //========================<revive system>===========================//
-private const bool REVIVE_ACTIVATED = true;							// set to "true" to activate reviving system
-private const bool REVIVE_TEAMMATES_FASTER = true;					// set to "true" to revive teammates faster
-private const int REVIVE_DURATION = 8;								// time in seconds needed to stay at dead player to revive him
-private const int REVIVE_TIME_ALIVE = 25;							// time in seconds for recently died player to be revived
-private const bool REVIVE_CAPTURE_ENEMIES = true;					// set to "true" to allow reviving enemies and making them allies
-private const bool REVIVE_BLEEDING = true;							// set to "true" to make players bleed before death
-private const bool REVIVE_FINISH_PLAYERS = true;					// set to "true" to allow players finish people
-private const int REVIVE_FINISH_HEALTH = 20;						// health of unfinished player
+private const bool REVIVE_ACTIVATED = true;			    // set to "true" to activate reviving system
+private const bool REVIVE_TEAMMATES_FASTER = true;		    // set to "true" to revive teammates faster
+private const int REVIVE_DURATION = 8;				    // time in seconds needed to stay at dead player to revive him
+private const int REVIVE_TIME_ALIVE = 25;			    // time in seconds for recently died player to be revived
+private const bool REVIVE_CAPTURE_ENEMIES = true;		    // set to "true" to allow reviving enemies and making them allies
+private const bool REVIVE_BLEEDING = true;			    // set to "true" to make players bleed before death
+private const bool REVIVE_FINISH_PLAYERS = true;		    // set to "true" to allow players finish people
+private const int REVIVE_FINISH_HEALTH = 20;			    // health of unfinished player
 //========================<instagib mode>===========================//
-private const bool INSTAGIB_ACTIVATED = false;						// set to "true" to activate instagib mode
-private const bool INSTAGIB_RANDOM = true;							// set to "true" to make instagib randomly appear with selected chance
-private const int INSTAGIB_DELAY = 4000;							// time in ms after that players would be given a weapon
-private const int INSTAGIB_CHANCE = 10;								// instagib will start with chance "1/x" where x is this variable
-private const bool INSTAGIB_MELEE = false;							// set to "true" to set melee weapons only
-private const bool INSTAGIB_EXPLODE = true;							// set to "true" explode players on death
-private const bool INSTAGIB_GIVE_SLOMO = true;						// set to "true" to give players slow motion at start
+private const bool INSTAGIB_ACTIVATED = false;			    // set to "true" to activate instagib mode
+private const bool INSTAGIB_RANDOM = true;			    // set to "true" to make instagib randomly appear with selected chance
+private const int INSTAGIB_DELAY = 4000;			    // time in ms after that players would be given a weapon
+private const int INSTAGIB_CHANCE = 10;				    // instagib will start with chance "1/x" where x is this variable
+private const bool INSTAGIB_MELEE = false;			    // set to "true" to set melee weapons only
+private const bool INSTAGIB_EXPLODE = true;			    // set to "true" explode players on death
+private const bool INSTAGIB_GIVE_SLOMO = true;			    // set to "true" to give players slow motion at start
 //=========================<commentator>============================//
-private const bool COMMENT_ACTIVATED = true;						// set to "true" to make commenter speak through pop-ups
-private const int COMMENT_TYPE_SPEED = 50;							// number of leters per seconds when the commenter speaks
+private const bool COMMENT_ACTIVATED = true;			    // set to "true" to make commenter speak through pop-ups
+private const int COMMENT_TYPE_SPEED = 50;			    // number of leters per seconds when the commenter speaks
 //=========================<time limits>============================//
-private const bool TIME_LIMIT_ACTIVATED = false;					// set to "true" to remove (or explode) host player at start
-private const int TIME_LIMIT_SECONDS = 1 * 60;						// set to "true" to set host on timer bomb
-private const string TIME_LIMIT_MODE = "auto";						// set to "main": start timer at beginning; "auto": when 2 teams or 2 players left
+private const bool TIME_LIMIT_ACTIVATED = false;		    // set to "true" to remove (or explode) host player at start
+private const int TIME_LIMIT_SECONDS = 1 * 60;			    // set to "true" to set host on timer bomb
+private const string TIME_LIMIT_MODE = "auto";			    // set to "main": start timer at beginning; "auto": when 2 teams or 2 players left
 //===========================<hosting>==============================//
-private const bool HOSTING_ACTIVATED = false;						// set to "true" to remove (or explode) host player at start
-private const bool HOSTING_TIME_BOMB = false;						// set to "true" to set host on timer bomb
-private const int HOSTING_BOMB_TIMER = 5;							// starting time on host's time bomb
+private const bool HOSTING_ACTIVATED = false;			    // set to "true" to remove (or explode) host player at start
+private const bool HOSTING_TIME_BOMB = false;			    // set to "true" to set host on timer bomb
+private const int HOSTING_BOMB_TIMER = 5;			    // starting time on host's time bomb
 //==========================<Kill dying players>====================//
-private const bool EXPLODE_ON_DEATH = true;							// set to true to make dying players explode
-private const float EXPLODE_ON_DEATH_DELAY = 5f;					// Time before the corpse explode. Set to 0 for instant explosion. keep an f after the number
+private const bool EXPLODE_ON_DEATH = true;			    // set to true to make dying players explode
+private const float EXPLODE_ON_DEATH_DELAY = 5f;		    // Time before the corpse explode. Set to 0 for instant explosion. keep an f after the number
 //==================================================================//
 //=================< DO NOT TOUCH ANYTHING IN BELOW >===============//
 //==============< IF YOU'RE NOT SURE WHAT YOU'RE DOING >============//
