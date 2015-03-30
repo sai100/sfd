@@ -125,6 +125,7 @@ public void PrepareStartSpells(){
 		data.Spells.Add(new PlayerData.SpellData("Demigod", 50, 15000f));
 //		data.Spells.Add(new PlayerData.SpellData("Heal", 50, 10000f));
 		data.Spells.Add(new PlayerData.SpellData("Defender", 50, 20000f));
+		data.Spells.Add(new PlayerData.SpellData("FUS RO DAH", 50, 7000f));
 //		data.Spells.Add(new PlayerData.SpellData("Real Fireball", 50, 6000f));
 //		data.Spells.Add(new PlayerData.SpellData("Grab", 50, 1000f));
 //		data.Spells.Add(new PlayerData.SpellData("FUS RO DAH", 50, 1000f)); //basically BIG invisible wall
@@ -356,6 +357,22 @@ public void SpellUsed(PlayerData data){
 		projs.Add(new ProjData(grabBg, Game.TotalElapsedGameTime, 1200f, false));
 		projs.Add(new ProjData(grab, Game.TotalElapsedGameTime, 1200f, false));
 		break;*/
+	case "FUS RO DAH":
+		{ string name = ply.GetProfile().Name;
+		Game.RunCommand("/MSG "+ name +": FUS RO DAH");
+		IObject fus = Game.CreateObject("InvisibleBlock", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*14, 3f), 0);
+		fus.SetBodyType(BodyType.Dynamic);
+		fus.SetLinearVelocity(new Vector2(ply.FacingDirection*10, 2f));
+		IObject ro = Game.CreateObject("InvisibleBlock", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*14, 0f), 0);
+		ro.SetBodyType(BodyType.Dynamic);
+		ro.SetLinearVelocity(new Vector2(ply.FacingDirection*10, 2f));
+		IObject dah  = Game.CreateObject("InvisibleBlock", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*14, -3f), 0);
+		dah.SetBodyType(BodyType.Dynamic);
+		dah.SetLinearVelocity(new Vector2(ply.FacingDirection*10, 2f));
+		projs.Add(new ProjData(fus, Game.TotalElapsedGameTime, 400f, false));
+		projs.Add(new ProjData(ro, Game.TotalElapsedGameTime, 400f, false));
+		projs.Add(new ProjData(dah, Game.TotalElapsedGameTime, 400f, false)); }
+		break;
 	}
 	data.Mana -= data.Spells[spellId].ManaCost;
 //	data.NextSpellTime = Game.TotalElapsedGameTime + data.Spells[spellId].Cooldown; -cooldown option
