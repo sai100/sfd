@@ -1,0 +1,288 @@
+// ====================== //
+// ===< DECLARATIONS >=== //
+// ====================== //
+
+public class PlayerData {
+	public IUser User = null;
+	public IPlayer Player = null;
+	public int Mana = 0;
+	public int CurrentSpellId = 0;
+	public float NextSpellTime = 0f;
+	public float NextUseTime = 0f;
+	public float NextChangeTime = 0f;
+
+	public class SpellData {
+		public string Name = "unnamed";
+		public int ManaCost = 0;
+		public float Cooldown = 0f;
+
+		public SpellData(string name, int cost, float cooldown){
+			this.Name = name;
+			this.ManaCost = cost;
+			this.Cooldown = cooldown;
+		}
+	}
+
+	public PlayerData(IUser user, IPlayer ply, int mana){
+		this.User = user;
+		this.Player = ply;
+		this.Mana = mana;
+	}
+
+	public List<SpellData> Spells = new List<SpellData>();
+}
+
+private class DeadPlayerData {
+	public float DeathTime = 0f;
+	public IUser User = null;
+	public IPlayer Body = null;
+	public PlayerTeam Team = PlayerTeam.Independent;
+
+	public DeadPlayerData(float deathTime, IUser user, IPlayer body, PlayerTeam team){
+		this.DeathTime = deathTime;
+		this.User = user;
+		this.Body = body;
+		this.Team = team;
+	}
+}
+
+private class ProjData {
+	public IObject ProjObject = null;
+	public float SpawnTime = 0f;
+	public float LifeTime = 1000f;
+	public bool Explosive = false;
+
+	public ProjData (IObject obj, float time, float life, bool explode){
+		this.ProjObject = obj;
+		this.SpawnTime = time;
+		this.LifeTime = life;
+		this.Explosive = explode;
+	}
+}
+
+Random rand = new Random();
+
+private List<PlayerData> players = new List<PlayerData>();
+private List<DeadPlayerData> deadPlayers = new List<DeadPlayerData>();
+private List<ProjData> projs = new List<ProjData>();
+
+// =============== //
+// ===< CODE > === //
+// =============== //
+
+public void OnStartup(){
+	foreach(IPlayer ply in Game.GetPlayers()) 
+		if (ply.GetUser() != null) players.Add(new PlayerData(ply.GetUser(), ply, 100));
+	PrepareStartSpells();
+
+	// set up the triggers
+		// fast tick trigger
+		IObjectTimerTrigger timerTriger2 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+		timerTriger2.SetIntervalTime(150);
+		timerTriger2.SetRepeatCount(0);
+		timerTriger2.SetScriptMethod("FastTick");
+		timerTriger2.Trigger();
+
+		// tick trigger
+		IObjectTimerTrigger timerTriger = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+		timerTriger.SetIntervalTime(500);
+		timerTriger.SetRepeatCount(0);
+		timerTriger.SetScriptMethod("MidTick");
+		timerTriger.Trigger();
+
+	foreach (IObject obj in Game.GetObjectsByName(new string[]{"SpawnWeapon", "SpawnWeaponArea", "SpawnWeaponAreaCeiling"})){
+		obj.Remove();
+	}
+
+	Game.ShowPopupMessage("Controls:\n[KEY=BLOCK_AIM] - change spell\n[KEY=ATTACK] - use spell", new Color(100,220,255));
+
+	// some messages
+	Game.RunCommand("/MSG #Wizards v0.1 (beta)");
+}
+
+public void PrepareStartSpells(){
+	foreach (PlayerData data in players){
+		//data.Spells.Add(new PlayerData.SpellData("Spell 1", 10, 1000f));
+		data.Spells.Add(new PlayerData.SpellData("FirePunch", 20, 3000f));
+		data.Spells.Add(new PlayerData.SpellData("FireBall", 20, 3000f));
+		data.Spells.Add(new PlayerData.SpellData("Crate of doom", 50, 10000f));
+		data.Spells.Add(new PlayerData.SpellData("DAMN CRUMPLED PAPER", 20, 2000f));
+		data.Spells.Add(new PlayerData.SpellData("BALLOONS!", 20, 10000f));
+		data.Spells.Add(new PlayerData.SpellData("SUICIDE", 50, 5000f));
+		data.Spells.Add(new PlayerData.SpellData("ANVIL", 50, 5000f));
+		data.Spells.Add(new PlayerData.SpellData("HADOUKEN", 50, 4000f));
+		data.Spells.Add(new PlayerData.SpellData("Demigod", 50, 15000f));
+//		data.Spells.Add(new PlayerData.SpellData("Heal", 50, 10000f));
+		data.Spells.Add(new PlayerData.SpellData("Defender", 50, 20000f));
+		data.Spells.Add(new PlayerData.SpellData("Real Fireball", 50, 6000f));
+		data.Spells.Add(new PlayerData.SpellData("Grab", 50, 1000f));
+//		data.Spells.Add(new PlayerData.SpellData("FUS RO DAH", 50, 1000f)); //basically BIG invisible wall
+	}
+}
+
+public void FastTick(TriggerArgs args){
+	Tick_Controls();
+}
+
+public void MidTick(TriggerArgs args){
+	Tick_Projectiles();
+	Tick_Damage();
+
+	if (Game.TotalElapsedGameTime > 10000f) Game.HidePopupMessage();
+}
+
+public void Tick_Controls(){
+	foreach (PlayerData data in players){
+		IPlayer ply = data.Player;
+		
+		if (/*ply.IsWalking && */ply.IsBlocking && data.NextChangeTime <= Game.TotalElapsedGameTime){
+			if (ply.FacingDirection == 1)
+				if (data.CurrentSpellId == data.Spells.Count - 1) data.CurrentSpellId = 0;
+				else data.CurrentSpellId ++;
+			else if (ply.FacingDirection == -1)
+				if (data.CurrentSpellId == 0) data.CurrentSpellId = data.Spells.Count - 1;
+				else data.CurrentSpellId --;
+			Game.PlayEffect("PWT", ply.GetWorldPosition(), data.Spells[data.CurrentSpellId].Name);
+			data.NextChangeTime = Game.TotalElapsedGameTime + 500f;
+		}
+
+		if (/*ply.IsWalking && */(ply.IsMeleeAttacking || ply.IsJumpAttacking) && (data.NextUseTime <= Game.TotalElapsedGameTime)){
+				if (data.NextSpellTime <= Game.TotalElapsedGameTime) SpellUsed(data);
+				else Game.PlayEffect("PWT", ply.GetWorldPosition(), ((int)((data.NextSpellTime - Game.TotalElapsedGameTime + 1000f) / 1000)).ToString() + " sec");
+				data.NextUseTime = Game.TotalElapsedGameTime + 500f;
+			}
+	}
+}
+
+public void Tick_Damage(){
+	foreach (IPlayer ply in Game.GetPlayers()){
+		ply.SetHealth(100f -
+			(ply.Statistics.TotalFallDamageTaken +
+			/*ply.Statistics.TotalMeleeDamageTaken +*/
+			ply.Statistics.TotalProjectileDamageTaken +
+			ply.Statistics.TotalExplosionDamageTaken +
+			ply.Statistics.TotalFireDamageTaken * 2) );
+	}
+}
+
+public void Tick_Projectiles(){
+	for(int i = projs.Count - 1; i >=0; i--){
+		if (Game.TotalElapsedGameTime - projs[i].SpawnTime > projs[i].LifeTime){
+			if (projs[i].Explosive) Game.TriggerExplosion(projs[i].ProjObject.GetWorldPosition());
+			projs[i].ProjObject.Remove();
+			projs.RemoveAt(i);
+		}
+	}
+}
+
+public void SpellUsed(PlayerData data){
+	IPlayer ply = data.Player;
+	int spellId = data.CurrentSpellId;
+
+	switch(data.Spells[spellId].Name){
+	case "FirePunch":
+		Game.SpawnFireNodes(
+			(ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 6, 10)) / 25,
+			12,
+			new Vector2(ply.FacingDirection * 6, 0),
+			1,
+			2,
+			FireNodeType.Flamethrower);
+		break;
+	case "FireBall":
+		Game.SpawnFireNodes(
+			(ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 6, 10)) / 25,
+			80,
+			new Vector2(ply.FacingDirection * 20, 0),
+			0.1f,
+			0.1f,
+			FireNodeType.Flamethrower);
+		break;
+	case "Crate of doom":
+		{ Vector2 pos = ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 22, 16);
+		IObject proj = Game.CreateObject(
+			"Crate01",
+			pos,
+			0f,
+			new Vector2(ply.FacingDirection * 20, 3),
+			(float)rand.Next(-200, 200));
+		for (int i = 0; i < 15; i++) Game.PlayEffect("TR_D",pos + new Vector2(rand.Next(-6,6), rand.Next(-6,6)));
+		projs.Add(new ProjData(proj, Game.TotalElapsedGameTime, 8000f, false));	}
+		break;
+	case "DAMN CRUMPLED PAPER":
+		{ Vector2 pos = ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 6, 10);
+			IObject proj = Game.CreateObject(
+			"CrumpledPaper00",
+			pos,
+			0f,
+			new Vector2(ply.FacingDirection * 10, 0),
+			(float)rand.Next(-30, 30));
+		Game.PlayEffect("Electric", pos);
+		projs.Add(new ProjData(proj, Game.TotalElapsedGameTime, 2500f, true)); }
+		break;
+	case "BALLOONS!":
+		for (int i = 0; i < 3; i++){
+			IObject proj = Game.CreateObject(
+			"Balloon00",
+			ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 12, 10),
+			0f,
+			new Vector2(ply.FacingDirection * rand.Next(3,10), rand.Next(-5,5)),
+			(float)rand.Next(-30, 30));
+			projs.Add(new ProjData(proj, Game.TotalElapsedGameTime, 1000f, true)); }
+		break;
+	case "SUICIDE":
+		for (int i = 0; i < 5; i++) Game.TriggerExplosion(ply.GetWorldPosition() + new Vector2(rand.Next(-40, 40), rand.Next(-40, 40)));
+		ply.Gib();
+		break;
+	default:
+		Game.PlayEffect("PWT", ply.GetWorldPosition(), "SHIT, ERROR!!!");
+		break;
+	case "ANVIL":
+		{ Vector2 pos = ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 48, 50);
+			IObject proj = Game.CreateObject("StoneWeak00C", pos, 0f);
+			proj.SetBodyType(BodyType.Dynamic);
+			proj.SetLinearVelocity(new Vector2(0, -10));
+			projs.Add(new ProjData(proj, Game.TotalElapsedGameTime, 1000f, false));
+			for (int i = 0; i < 15; i++) Game.PlayEffect("TR_D",pos + new Vector2(rand.Next(-6,6), rand.Next(-6,6)));
+		}
+		break;
+	case "HADOUKEN":
+		{ string name = ply.GetProfile().Name;
+		Game.RunCommand("/MSG "+ name +": HADOUKEN");
+		IObject hadoukenBg = Game.CreateObject("BgNeon01F", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*14, 0f) + new Vector2(0, 8), 0);
+		hadoukenBg.SetBodyType(BodyType.Dynamic);
+		hadoukenBg.SetLinearVelocity(new Vector2(ply.FacingDirection*22, 2f));
+		IObject hadouken = Game.CreateObject("InvisibleBlock", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*14, -1f) + new Vector2(0, 8), 0);
+		hadouken.SetBodyType(BodyType.Dynamic);
+		hadouken.SetLinearVelocity(new Vector2(ply.FacingDirection*22, 2f));
+		IObject hadouken2 = Game.CreateObject("InvisibleBlock", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*14, 1f) + new Vector2(0, 8), 0);
+		hadouken2.SetBodyType(BodyType.Dynamic);
+		hadouken2.SetLinearVelocity(new Vector2(ply.FacingDirection*22, 2f));
+		projs.Add(new ProjData(hadoukenBg, Game.TotalElapsedGameTime, 1000f, false));
+		projs.Add(new ProjData(hadouken, Game.TotalElapsedGameTime, 1000f, false));
+		projs.Add(new ProjData(hadouken2, Game.TotalElapsedGameTime, 1000f, false)); }
+		break;
+	case "Demigod":
+		Game.TriggerExplosion(ply.GetWorldPosition() + new Vector2(ply.FacingDirection*100, 0f));
+		break;
+/*	case "Heal":
+		
+		break;*/
+	case "Defender":
+		PlayerTeam defendingTeam = ply.GetTeam();
+		IPlayer defender = Game.CreatePlayer(ply.GetWorldPosition() + new Vector2(ply.FacingDirection*25, 0f));
+		defender.SetBotType(BotType.TutorialA);
+		defender.SetTeam(defendingTeam);
+		break;
+	case "Real Fireball":
+		Game.SpawnProjectile(ProjectileItem.FLAREGUN, ply.GetWorldPosition() + new Vector2(ply.FacingDirection*10, 0f) + new Vector2(0, 8), new Vector2(ply.FacingDirection*10, 0f));
+		break;
+	/*case "Grab":
+		IObject grabBg = Game.CreateObject("BgNeon01F", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*10, 0f) + new Vector2(0, 8), 0);
+		IObject grab = Game.CreateObject("InvisibleBlock", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*10, 0f) + new Vector2(0, 8), 0);
+		projs.Add(new ProjData(grabBg, Game.TotalElapsedGameTime, 1200f, false));
+		projs.Add(new ProjData(grab, Game.TotalElapsedGameTime, 1200f, false));
+		break;*/
+	}
+	data.NextSpellTime = Game.TotalElapsedGameTime + data.Spells[spellId].Cooldown;
+}
