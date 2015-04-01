@@ -12,7 +12,7 @@ private bool MANA_COOLDOWN_ACTIVATED = true;						// set to true to enable mana 
 //private bool TIMELIMIT_ACTIVATED = true;							// set to true to enable time limit for last 2 players
 //=========================<time limits>============================//
 private const bool TIME_LIMIT_ACTIVATED = true;		    			// set to "true" to remove (or explode) host player at start
-private const int TIME_LIMIT_SECONDS = 1 * 60;			    		// set to "true" to set host on timer bomb
+private const int TIME_LIMIT_SECONDS = 1 * 60;			    		// choose the amount of time given to players to finish the round
 private const string TIME_LIMIT_MODE = "auto";			    		// set to "main": start timer at beginning; "auto": when 2 teams or 2 players left
 //=========================<commentator>============================//
 // some rpg commentaries made by Gwen. I would do some too.
