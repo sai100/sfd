@@ -1,0 +1,419 @@
+//==========================================================================================//
+//==========================================================================================//
+//====================[Counter Figther Deluxe Mode]=========================================//
+//========================[by           ]===================================================//
+//==========================================================================================//
+
+// Edit this number to set the number of victories a team have to get before the game is over
+const int ROUNDS_TO_WIN = 5;
+
+
+List <IUser> spawned = new List <IUser>();
+List <Infos> players = new List <Infos>();
+
+Random rndNum = new Random();
+
+bool waveOK = false;
+
+string t = " 's money : ";
+
+int bluteam = 0;
+int redteam = 0;
+
+int bluwin = 0;
+int redwin = 0;
+
+//list the members of a team taking part to the battle
+List <IPlayer> redteamInGame = new List<IPlayer>();
+List <IPlayer> bluteamInGame = new List<IPlayer>();
+
+Color WHITE = new Color (255,255,255);
+Color RED = new Color (255,100,100);
+Color NAVY = new Color (100,100,255);
+Color doom = new Color (50,50,50);
+Color dollar = new Color (100,255,100);
+
+public class Infos {
+
+	public PlayerTeam team = PlayerTeam.Independent;
+	public int time = 0;
+	public IUser user = null;
+	public IPlayer corpse = null;
+	public bool IsDead = false;
+
+	public int money = 100;
+	public int reset = 100;
+	public IObjectText usT = null;
+
+	public Infos(PlayerTeam teamC, int timeC, IUser userC, IPlayer corpseC, bool dead){
+		this.team = teamC;
+		this.time = timeC;
+		this.user = userC;
+		this.corpse = corpseC;
+		this.IsDead = dead;
+	}
+}
+
+
+public void OnStartup(){
+	((IObjectText)Game.GetSingleObjectByCustomId("redtext")).SetText("Red team : "+ redwin + "/" + ROUNDS_TO_WIN);
+	((IObjectText)Game.GetSingleObjectByCustomId("blutext")).SetText("Blue team : "+ bluwin + "/" + ROUNDS_TO_WIN);
+	Game.RunCommand("/MSG Welcome to #team Counter Figther Deluxe map!");
+	Game.RunCommand("/MSG Kill the enemies!");	
+	Game.RunCommand("/MSG Earn some money, and spend it into weapons!");
+	foreach(IUser user in Game.GetActiveUsers()){
+		spawned.Add(user);
+	}
+	List <IPlayer> w = new List <IPlayer>();
+	foreach(IPlayer ply in Game.GetPlayers()) if(ply.GetUser() != null) w.Add(ply);
+	while (true){
+		if (w.Count == 0) break;
+		else {
+			IPlayer ply = w[0];
+			IUser user = ply.GetUser();
+			Infos plyInf = new Infos( PlayerTeam.Independent,0, user, ply, false);
+			if (redteam == 0 && bluteam == 0) {
+				int i = rndNum.Next(2);
+				switch (i){
+					case 0 : {
+						plyInf.usT = ((IObjectText)Game.GetObjectsByCustomId("BLUT")[0]);
+						plyInf.usT.CustomId = ply.Name() + "t";
+						ply.SetTeam(PlayerTeam.Team1); 
+						bluteam ++;
+						break;
+					}
+					case 1 : {
+						plyInf.usT = ((IObjectText)Game.GetObjectsByCustomId("REDT")[0]);
+						plyInf.usT.CustomId = ply.Name() + "t";
+						ply.SetTeam(PlayerTeam.Team2); 
+						redteam ++;
+						break;
+					}
+					default: break;
+				}
+			}
+			else if(redteam>bluteam){
+				bluteam ++;
+				plyInf.usT = ((IObjectText)Game.GetSingleObjectByCustomId("BLUT"));
+				plyInf.usT.CustomId = ply.Name() + "t";
+				ply.SetTeam(PlayerTeam.Team1);
+			}
+			else {
+				ply.SetTeam(PlayerTeam.Team2); 
+				plyInf.usT = ((IObjectText)Game.GetSingleObjectByCustomId("REDT"));
+				plyInf.usT.CustomId = ply.Name() + "t";
+				redteam ++;
+			}
+			w.Remove(ply);
+			plyInf.team = plyInf.corpse.GetTeam();
+			players.Add(plyInf);
+		}
+	}
+	foreach(Infos inf in players){
+		if(inf.team == PlayerTeam.Team1) inf.corpse.SetWorldPosition(((IObject)Game.GetSingleObjectByCustomId("blusp")).GetWorldPosition());
+		if(inf.team == PlayerTeam.Team2) inf.corpse.SetWorldPosition(((IObject)Game.GetSingleObjectByCustomId("redsp")).GetWorldPosition());
+	}
+	NewRound(null);
+}
+
+public void eachSec(TriggerArgs args){
+	respCheck();
+	usersCheck();
+}
+
+public void respCheck(){
+	List <Infos> temp = new List<Infos>();
+	foreach (Infos inf in players){
+		if (inf.IsDead){
+			if(inf.time < 5) inf.time++;
+			else temp.Add(inf);
+		}
+	}
+	foreach (Infos inf in temp) resp(inf);
+}
+
+public void usersCheck(){
+	foreach(IUser user in Game.GetActiveUsers()){
+		if (checkUser(user, spawned) == false) {
+			spawned.Add(user);
+			Infos plyInf = new Infos( PlayerTeam.Independent,5, user, null, true);
+			if(redteam>bluteam){
+				bluteam ++;
+				plyInf.team = PlayerTeam.Team1;
+				plyInf.usT = ((IObjectText)Game.GetObjectsByCustomId("BLUT")[0]);
+			}
+			else {
+				plyInf.usT = ((IObjectText)Game.GetObjectsByCustomId("REDT")[0]);
+				plyInf.team = PlayerTeam.Team2;
+				redteam ++;
+			}
+			plyInf.usT.CustomId = plyInf.user.Name + "t";
+			Game.WriteToConsole("A new challenger approach");
+			players.Add(plyInf);
+		}
+	}
+}
+
+private void resp(Infos inf){
+
+	IPlayer ply = Game.CreatePlayer(new Vector2(0f,0f));
+	ply.SetTeam(inf.team);
+	ply.SetUser(inf.user);
+	ply.SetProfile(inf.user.GetProfile());
+	if (inf.corpse != null)inf.corpse.Gib();
+	inf.IsDead = false;
+	inf.time = 0;
+	inf.corpse = ply;
+	if(inf.team == PlayerTeam.Team1)ply.SetWorldPosition(((IObject)Game.GetSingleObjectByCustomId("blusp")).GetWorldPosition());
+	else ply.SetWorldPosition(((IObject)Game.GetSingleObjectByCustomId("redsp")).GetWorldPosition());
+
+}
+
+public bool checkUser ( IUser user, List <IUser> liste){
+	foreach(IUser userL in liste){
+		if (user.Name == userL.Name) return true;
+	}
+	return false;
+}
+
+public void OnPlayerDeath(TriggerArgs args){
+	IPlayer ply = (IPlayer)args.Sender;
+	IUser user = null;
+	Infos infPly = null;
+	if (GetPlayerInfo(ply) != null){
+		infPly = GetPlayerInfo(ply);
+		user = infPly.user;
+	}
+	if(ply.GetUser() != null && checkUser (ply.GetUser() , spawned) && ply.GetUser().Name != "") {
+		infPly.IsDead = true;
+		infPly.usT.SetTextColor(doom);
+		infPly.usT.SetText(ply.Name() + " is dead.");
+	}
+	else if (infPly != null){
+		//disconnection
+		players.Remove(GetPlayerInfo(ply));
+		infPly.usT.SetTextColor(doom);
+		infPly.usT.SetText(ply.GetProfile().Name + " rage quit");
+		if(infPly.team == PlayerTeam.Team1)infPly.usT.CustomId = "BLUT";
+		else infPly.usT.CustomId = "REDT";
+		spawned.Remove(user);
+	}
+	redteamInGame.Remove(ply);
+	bluteamInGame.Remove(ply);
+	if (waveOK){
+		if(redteamInGame.Count == 0 && bluteamInGame.Count != 0 ) {
+			bluwin ++;
+			endWave(PlayerTeam.Team1);
+			if(bluwin >= ROUNDS_TO_WIN) Game.SetGameOver("Blue Team got " + ROUNDS_TO_WIN + " Victories ! \n THEY WIN !");
+		}
+		if(bluteamInGame.Count == 0 && redteamInGame.Count != 0 ) {
+			redwin ++;
+			endWave(PlayerTeam.Team2);
+			if(redwin >= ROUNDS_TO_WIN) Game.SetGameOver("Red Team got " + ROUNDS_TO_WIN + " Victories ! \n THEY WIN !");
+		}
+		if(bluteamInGame.Count == 0 && redteamInGame.Count == 0 ) endWave(PlayerTeam.Team3);
+	}
+}
+
+public Infos GetPlayerInfo(IPlayer ply){
+	for(int i = players.Count -1; i>=0; i--){
+		if(ply.Name() == players[i].corpse.Name()){
+			return players[i];
+			break;
+		} 
+	}
+	return null;
+}
+
+
+
+//=================MONEY THING================
+
+public void buy(TriggerArgs args){
+	IPlayer ply = (IPlayer)args.Sender;
+	Infos infPly = GetPlayerInfo(ply);
+	switch (((IObject)args.Caller).CustomId)
+	{
+		case "katana" : checkMoney(ply,100,WeaponItem.KATANA); break;
+		case "sniper" : checkMoney(ply,180,WeaponItem.SNIPER); break;
+		case "pistol" : checkMoney(ply,50,WeaponItem.PISTOL); break;
+		case "SMG" : checkMoney(ply,150,WeaponItem.TOMMYGUN); break;
+		case "machete" : checkMoney(ply,40,WeaponItem.MACHETE); break;
+		case "slow1" : checkMoney(ply,20,WeaponItem.SLOWMO_5 ); break;
+		case "slow2" : checkMoney(ply,40,WeaponItem.SLOWMO_10 ); break;
+		case "SO" : checkMoney(ply,100,WeaponItem.SAWED_OFF); break;
+		case "shotty" : checkMoney(ply,150,WeaponItem.SHOTGUN); break;
+		case "wrench" : checkMoney(ply, 20, WeaponItem.PIPE); break;
+		case "magnum" : checkMoney(ply, 200, WeaponItem.MAGNUM); break;
+		case "uzi" : checkMoney(ply, 80, WeaponItem.UZI); break;
+		case "warmaker" : checkMoney(ply, 300, WeaponItem.M60); break;
+		case "reset" : {
+			ply.RemoveWeaponItemType(WeaponItemType.Melee);
+			ply.RemoveWeaponItemType(WeaponItemType.Handgun);
+			ply.RemoveWeaponItemType(WeaponItemType.Rifle);
+			ply.RemoveWeaponItemType(WeaponItemType.Thrown);
+			ply.RemoveWeaponItemType(WeaponItemType.Powerup);
+			infPly.money = infPly.reset;
+			break;
+		}
+		default : break;
+	}
+	infPly.usT.SetText(infPly.user.Name + t + infPly.money + " $");
+}
+
+public void checkMoney(IPlayer ply, int mon, WeaponItem wpn){
+	Infos inf = GetPlayerInfo(ply);
+	if (inf.money >= mon){
+		inf.money -=mon;
+		ply.GiveWeaponItem(wpn);
+	}
+	else Game.ShowPopupMessage(ply.Name() + " is poor.");
+}
+
+
+//=========================WAVE CONTROL ===========================
+
+private void away(Infos plyInf){
+	IPlayer ply = plyInf.corpse;
+
+	if(plyInf.team == PlayerTeam.Team1){
+		for (int i = 10; i !=0; i--){
+			ply.SetWorldPosition(((IObject)Game.GetSingleObjectByCustomId("bluenter")).GetWorldPosition());
+		}
+		plyInf.usT.SetText(ply.Name() + " is alive");
+		plyInf.usT.SetTextColor(NAVY);
+		bluteamInGame.Add(ply);
+	}
+	else {
+		for (int i = 10; i !=0; i--){
+			ply.SetWorldPosition(((IObject)Game.GetSingleObjectByCustomId("redenter")).GetWorldPosition());
+		}
+		plyInf.usT.SetText(ply.Name() + " is alive");
+		plyInf.usT.SetTextColor(RED);
+		redteamInGame.Add(ply);
+	}
+}
+
+int telrep = 3;
+public void telpla(TriggerArgs args){
+	foreach(Infos plyInf in players){
+		IPlayer ply = plyInf.corpse;
+		if(plyInf.team == PlayerTeam.Team1){
+			for (int i = 10; i !=0; i--){
+				ply.SetWorldPosition(((IObject)Game.GetSingleObjectByCustomId("bluenter")).GetWorldPosition());
+			}
+		}
+		else {
+			for (int i = 10; i !=0; i--){
+				ply.SetWorldPosition(((IObject)Game.GetSingleObjectByCustomId("redenter")).GetWorldPosition());
+			}
+		}
+	}
+	if(telrep == 0){
+		foreach(IPlayer ply in Game.GetPlayers())ply.SetInputEnabled(true);
+		telrep = 3;
+	}
+	else telrep --;
+
+}
+
+//only called on wave end
+public void endWave(PlayerTeam argTeam){
+	waveOK = false;
+	foreach (Infos inf in players) {
+		if(inf.team == PlayerTeam.Team1) inf.corpse.SetWorldPosition(((IObject)Game.GetSingleObjectByCustomId("blusp")).GetWorldPosition());
+		if(inf.team == PlayerTeam.Team2) inf.corpse.SetWorldPosition(((IObject)Game.GetSingleObjectByCustomId("redsp")).GetWorldPosition());
+		if (inf.team == argTeam && argTeam != PlayerTeam.Independent){
+			int lifeBonus = 100;
+			if (argTeam == PlayerTeam.Team1)foreach(IPlayer ply in bluteamInGame) {
+				lifeBonus += (int)ply.GetHealth()/8;
+				ply.SetHealth(100f);
+			}
+			else foreach(IPlayer ply in redteamInGame){
+				lifeBonus += (int)ply.GetHealth()/8;
+				ply.SetHealth(100f);
+			}
+			inf.money += lifeBonus;
+		}
+		else if(argTeam != PlayerTeam.Independent)inf.money += 75;
+		inf.usT.SetText(inf.user.Name + t + inf.money + " $");
+	}
+	IObjectText text = (IObjectText)Game.GetSingleObjectByCustomId("stateText");
+	switch(argTeam){
+		case (PlayerTeam.Team1): {
+			text.SetText("Blue team\n   win");
+			text.SetTextColor(NAVY);
+			((IObjectText)Game.GetSingleObjectByCustomId("blutext")).SetText("Blue team : "+ bluwin + "/" + ROUNDS_TO_WIN);
+			break;
+		}
+		case (PlayerTeam.Team2): {
+			text.SetText("Red team\n   wins");
+			text.SetTextColor(RED);
+			((IObjectText)Game.GetSingleObjectByCustomId("redtext")).SetText("Red team : "+ redwin + "/" + ROUNDS_TO_WIN);
+			break;
+		}
+		case (PlayerTeam.Team3): {
+			text.SetText("Draw");
+			text.SetTextColor(WHITE);
+			break;
+		}
+		case (PlayerTeam.Independent): {
+			text.SetText("  Waiting \n for more \n  players");
+			text.SetTextColor(WHITE);
+			break;
+		}
+	}
+	((IObjectTrigger)Game.GetSingleObjectByCustomId("newrnd")).Trigger();
+}
+
+int rep = 21;
+public void StartWave(TriggerArgs args){
+	if (rep == 0){
+		foreach(Infos inf in players)away(inf);
+		foreach(Infos inf in players){
+			if(bluteamInGame.Count == 0 || redteamInGame.Count == 0) {
+				endWave(PlayerTeam.Independent);
+				inf.corpse.SetInputEnabled(false);
+			}
+			else {
+				inf.reset = inf.money;
+				waveOK = true;
+				((IObjectTrigger)Game.GetSingleObjectByCustomId("telething")).Trigger();
+				Game.RunCommand("/IL 0");
+			}
+		}
+		((IObjectText)Game.GetSingleObjectByCustomId("stateText")).SetText("FIGTH!");
+		rep = 21;
+	}
+	else {	
+		rep --;
+		((IObjectText)Game.GetSingleObjectByCustomId("stateText")).SetText(rep + "s");
+		((IObjectText)Game.GetSingleObjectByCustomId("stateText")).SetTextColor(dollar);
+	}
+}
+
+public void NewRound(TriggerArgs args){
+	Game.RunCommand("/IL 1");
+	foreach(Infos inf in players){
+		IObjectText text = inf.usT;
+		text.SetTextColor(dollar);
+		text.SetText(inf.user.Name + t + inf.money + " $");
+	}
+	bluteamInGame.Clear();
+	redteamInGame.Clear();
+	((IObjectTrigger)Game.GetSingleObjectByCustomId("roundtmr")).Trigger();
+}
+
+// ============================ MAP =============================//
+
+public void elevator(TriggerArgs args){
+	switch(((IObject)args.Caller).CustomId){
+		case "up" : ((IObjectElevatorAttachmentJoint)Game.GetSingleObjectByCustomId("elevatard")).SetMotorSpeed(-3f); break;
+		case "down" : ((IObjectElevatorAttachmentJoint)Game.GetSingleObjectByCustomId("elevatard")).SetMotorSpeed(3f); break;
+		case "switch" : ((IObjectElevatorAttachmentJoint)Game.GetSingleObjectByCustomId("elevatard")).SetMotorSpeed(-((IObjectElevatorAttachmentJoint)Game.GetSingleObjectByCustomId("elevatard")).GetMotorSpeed()); break;
+		case "arrival" : Game.PlaySound("ElevatorDing", ((IObjectElevatorAttachmentJoint)Game.GetSingleObjectByCustomId("elevatard")).GetWorldPosition() ,100f ); break;
+	}
+}
+
+
+
