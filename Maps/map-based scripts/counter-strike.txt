@@ -395,6 +395,7 @@ public void StartWave(TriggerArgs args){
 public void NewRound(TriggerArgs args){
 	Game.RunCommand("/IL 1");
 	foreach(Infos inf in players){
+		inf.corpse.SetHealth(100f);
 		IObjectText text = inf.usT;
 		text.SetTextColor(dollar);
 		text.SetText(inf.user.Name + t + inf.money + " $");
