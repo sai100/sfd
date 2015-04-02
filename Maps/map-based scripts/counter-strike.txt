@@ -309,10 +309,7 @@ public void telpla(TriggerArgs args){
 			}
 		}
 	}
-	if(telrep == 0){
-		foreach(IPlayer ply in Game.GetPlayers())ply.SetInputEnabled(true);
-		telrep = 3;
-	}
+	if(telrep == 0)telrep = 3;
 	else telrep --;
 
 }
@@ -369,11 +366,11 @@ public void endWave(PlayerTeam argTeam){
 int rep = 21;
 public void StartWave(TriggerArgs args){
 	if (rep == 0){
+		((IObjectText)Game.GetSingleObjectByCustomId("stateText")).SetText("FIGTH!");
 		foreach(Infos inf in players)away(inf);
 		foreach(Infos inf in players){
 			if(bluteamInGame.Count == 0 || redteamInGame.Count == 0) {
 				endWave(PlayerTeam.Independent);
-				inf.corpse.SetInputEnabled(false);
 			}
 			else {
 				inf.reset = inf.money;
@@ -382,7 +379,6 @@ public void StartWave(TriggerArgs args){
 				Game.RunCommand("/IL 0");
 			}
 		}
-		((IObjectText)Game.GetSingleObjectByCustomId("stateText")).SetText("FIGTH!");
 		rep = 21;
 	}
 	else {	
