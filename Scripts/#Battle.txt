@@ -124,6 +124,13 @@ private string [] typingMachine_templatesWinTeam = new string [] {
 
 private bool gameOverSaid = false;
 
+string[] restrictedMaps = new string[]{
+	"#Chalet Z",
+	"#Abadoned Subway (BG)",
+	"#Terminator",
+	"#Build Site (KotH)"
+};
+
 // ============================ |
 // ========< THE CODE >======== |
 // ============================ V
@@ -160,65 +167,71 @@ private class PlayerData {
 }
 
 public void OnStartup(){
-	INSTAGIB_ON = (INSTAGIB_ACTIVATED && (rand.Next(INSTAGIB_CHANCE) == 0 || !INSTAGIB_RANDOM));
+	bool mapIsGood = true;
+	foreach (string mapName in restrictedMaps) if (mapName == Game.MapName) mapIsGood = false;
+	if (mapIsGood){
+		INSTAGIB_ON = (INSTAGIB_ACTIVATED && (rand.Next(INSTAGIB_CHANCE) == 0 || !INSTAGIB_RANDOM));
 
-	// set up the triggers
-		// fast tick trigger
-		IObjectTimerTrigger timerTriger = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
-		timerTriger.SetIntervalTime(100);
-		timerTriger.SetRepeatCount(0);
-		timerTriger.SetScriptMethod("TickFast");
-		timerTriger.Trigger();
-		// medium tick trigger
-		IObjectTimerTrigger timerTriger2 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
-		timerTriger2.SetIntervalTime(500);
-		timerTriger2.SetRepeatCount(0);
-		timerTriger2.SetScriptMethod("TickMid");
-		timerTriger2.Trigger();
-		// slow tick trigger
-		IObjectTimerTrigger timerTriger3 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
-		timerTriger3.SetIntervalTime(1000);
-		timerTriger3.SetRepeatCount(0);
-		timerTriger3.SetScriptMethod("TickSlow");
-		timerTriger3.Trigger();
-		// death tigger
-		IObjectTrigger deathTrigger = (IObjectTrigger)Game.CreateObject("OnPlayerDeathTrigger"); 
-		deathTrigger.SetScriptMethod("Death");
+		// set up the triggers
+			// fast tick trigger
+			IObjectTimerTrigger timerTriger = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+			timerTriger.SetIntervalTime(100);
+			timerTriger.SetRepeatCount(0);
+			timerTriger.SetScriptMethod("TickFast");
+			timerTriger.Trigger();
+			// medium tick trigger
+			IObjectTimerTrigger timerTriger2 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+			timerTriger2.SetIntervalTime(500);
+			timerTriger2.SetRepeatCount(0);
+			timerTriger2.SetScriptMethod("TickMid");
+			timerTriger2.Trigger();
+			// slow tick trigger
+			IObjectTimerTrigger timerTriger3 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+			timerTriger3.SetIntervalTime(1000);
+			timerTriger3.SetRepeatCount(0);
+			timerTriger3.SetScriptMethod("TickSlow");
+			timerTriger3.Trigger();
+			// death tigger
+			IObjectTrigger deathTrigger = (IObjectTrigger)Game.CreateObject("OnPlayerDeathTrigger"); 
+			deathTrigger.SetScriptMethod("Death");
 
-		// show settings trigger
-		if (SHOW_SETTINGS){
-			ShowSettings();
-			IObjectTimerTrigger timerTriger4 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
-			timerTriger4.SetIntervalTime(5000);
-			timerTriger4.SetRepeatCount(1);
-			timerTriger4.SetScriptMethod("HideSettings");
-			timerTriger4.CustomId = "HideSettingsTrigger";
-			timerTriger4.Trigger();
+			// show settings trigger
+			if (SHOW_SETTINGS){
+				ShowSettings();
+				IObjectTimerTrigger timerTriger4 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+				timerTriger4.SetIntervalTime(5000);
+				timerTriger4.SetRepeatCount(1);
+				timerTriger4.SetScriptMethod("HideSettings");
+				timerTriger4.CustomId = "HideSettingsTrigger";
+				timerTriger4.Trigger();
+			}
+
+		// settings based method executions
+		if (INSTAGIB_ON)  Prepare_Instagib();
+		else if (HARDCORE_ACTIVATED) Prepare_CustomDamage();
+
+		if (HOSTING_ACTIVATED){
+			hostPlayer = Game.GetActiveUsers()[0].GetPlayer();
+
+			if (!HOSTING_TIME_BOMB) hostPlayer.Remove();
+			else {
+				// tick trigger
+				IObjectTimerTrigger timerTriger5 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+				timerTriger5.SetIntervalTime(1000);
+				timerTriger5.SetRepeatCount(0);
+				timerTriger5.SetScriptMethod("Tick_Bomb");
+				timerTriger5.CustomId = "Tick_BombTrigger";
+				timerTriger5.Trigger();
+			}
 		}
 
-	// settings based method executions
-	if (INSTAGIB_ON)  Prepare_Instagib();
-	else if (HARDCORE_ACTIVATED) Prepare_CustomDamage();
-
-	if (HOSTING_ACTIVATED){
-		hostPlayer = Game.GetActiveUsers()[0].GetPlayer();
-
-		if (!HOSTING_TIME_BOMB) hostPlayer.Remove();
-		else {
-			// tick trigger
-			IObjectTimerTrigger timerTriger5 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
-			timerTriger5.SetIntervalTime(1000);
-			timerTriger5.SetRepeatCount(0);
-			timerTriger5.SetScriptMethod("Tick_Bomb");
-			timerTriger5.CustomId = "Tick_BombTrigger";
-			timerTriger5.Trigger();
-		}
+		// some messages
+		ModMessage("v1.1 (beta)");
+		if (HOSTING_ACTIVATED) ModMessage("Host is AFK");
+		if (INSTAGIB_ON && INSTAGIB_RANDOM) ModMessage("INSTAGIB ROUND!");
+	} else {
+		ModMessage("This map is restricted.");
 	}
-
-	// some messages
-	Game.RunCommand("/MSG #Battle v1.1 (beta)");
-	if (HOSTING_ACTIVATED) Game.RunCommand("/MSG Host is AFK");
-	if (INSTAGIB_ON && INSTAGIB_RANDOM) Game.RunCommand("/MSG INSTAGIB ROUND!");
 }
 
 public void TickFast(TriggerArgs args){
@@ -647,6 +660,10 @@ public void Tick_ExplodeOnDeath(){
 // ============================= |
 // =========< HELPERS >========= |
 // ============================= V
+
+public void ModMessage(string text){
+	Game.RunCommand("/MSG #Battle mod: " + text);
+}
 
 public Color GetTeamColor(PlayerTeam team){
 	if (team == PlayerTeam.Team1) return new Color(124, 124, 246);
