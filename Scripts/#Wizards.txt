@@ -4,16 +4,17 @@
 //==================================================================//
 //=====================< #WIZARDS - settings >======================//
 //============================<general>=============================//
-private bool ALLOW_WEAPONS = false;									// set to true to restrict guns and throwables..
-private bool HOSTING_ACTIVATED = false;								// set to true to kill host at the beginning of each round.
+private bool ALLOW_WEAPONS = false;									// set to true to allow guns and throwables
 private bool UNLIMITED_MANA = false;								// set to true to get unlimited mana
 private bool SPELL_COOLDOWN_ACTIVATED = false;						// set to true to enable spells cooldown
 private bool MANA_COOLDOWN_ACTIVATED = true;						// set to true to enable mana regeneration cooldown after spell use
 //private bool TIMELIMIT_ACTIVATED = true;							// set to true to enable time limit for last 2 players
 //=========================<time limits>============================//
 private const bool TIME_LIMIT_ACTIVATED = true;		    			// set to "true" to remove (or explode) host player at start
-private const int TIME_LIMIT_SECONDS = 90;			    		// choose the amount of time given to players to finish the round
+private const int TIME_LIMIT_SECONDS = 90;			    			// choose the amount of time given to players to finish the round
 private const string TIME_LIMIT_MODE = "auto";			    		// set to "main": start timer at beginning; "auto": when 2 teams or 2 players left
+//===========================<utilites>=============================//
+private bool HOSTING_ACTIVATED = false;								// set to true to kill host at the beginning of each round.
 //=========================<commentator>============================//
 // some rpg commentaries made by Gwen. I would do some too.
 //==================================================================//
@@ -41,8 +42,9 @@ public class PlayerData {
 	public bool IsFrozen = false;
 	public float UnFreezeTime = 0f;
 	
-	public float StartHealth = 100f;
+	public float StartHealth = 50f;
 	public float AddedHealth = 0f;
+	public float LastHealth = 100f;
 	public IObjectText Label = null;
 
 	public List<BookData> Books = new List<BookData>();
@@ -112,41 +114,93 @@ private int m_lastElapsedSeconds = 0;
 private bool m_twoOpponentsRemaining = false;
 private bool WAS_ACTIVATED;
 
+string[] restrictedMaps = new string[]{
+	"#Chalet Z",
+	"#Abadoned Subway (BG)",
+	"#Terminator",
+	"#Build Site (KotH)"
+};
+string[] restrictedWeapons = new string[]{
+	"SUPPLYCRATE00",
+	"WPNPISTOL",
+	"WPNMAGNUM",
+	"WPNPUMPSHOTGUN",
+	"WPNKATANA",
+	"WPNPIPEWRENCH",
+	"WPNTOMMYGUN",
+	"WPNM60",
+	"WPNMACHETE",
+	"WPNSNIPERRIFLE",
+	"WPNSAWEDOFF",
+	"WPNBAT",
+	"WPNUZI",
+	"ITEMLASERSIGHT",
+	"WPNBAZOOKA",
+	"WPNAXE",
+	"WPNASSAULTRIFLE",
+	"WPNGRENADES",
+	"WPNLAZER",
+	"WPNCARBINE",
+	"WPNMOLOTOVS",
+	"WPNFLAMETHROWER",
+	"WPNFLAREGUN",
+	"WPNREVOLVER",
+	"WPNGRENADELAUNCHER",
+	"WPNSMG",
+	"WPNSUBMACHINEGUN",
+	"WPNHAMMER",
+	"WPNGRENADESTHROWN",
+	"WPNMOLOTOVSTHROWN"
+};
+string[] replacingWeapons = new string[]{
+	"ITEMSLOMO5",
+	"ITEMSLOMO10",
+	"ITEMPILLS",
+	"ITEMMEDKIT"
+};
+
 // =============== //
 // ===< CODE > === //
 // =============== //
 
 public void OnStartup(){
-	// give each player a set of spells
-	foreach(IPlayer ply in Game.GetPlayers()) 
-		if (ply.GetUser() != null) players.Add(new PlayerData(ply.GetUser(), ply, 100));
-	PrepareStartSpells();
+	bool mapIsGood = true;
+	foreach (string mapName in restrictedMaps) if (mapName == Game.MapName) mapIsGood = false;
 
-	// set up the triggers
-		// fast tick trigger
-		CreateTimer(50, 0, "FastTick", "");
+	if (mapIsGood){
+		// give each player a set of spells
+		foreach(IPlayer ply in Game.GetPlayers()) 
+			if (ply.GetUser() != null) players.Add(new PlayerData(ply.GetUser(), ply, 100));
+		PrepareStartSpells();
 
-		// mid tick trigger
-		CreateTimer(150, 0, "MidTick", "");
+		// set up the triggers
+			// fast tick trigger
+			CreateTimer(50, 0, "FastTick", "");
 
-		// slow tick trigger
-		CreateTimer(500, 0, "SlowTick", "");
+			// mid tick trigger
+			CreateTimer(150, 0, "MidTick", "");
 
-		// slow tick trigger
-		CreateTimer(1000, 0, "VerySlowTick", "");
+			// slow tick trigger
+			CreateTimer(500, 0, "SlowTick", "");
 
-		// death trigger
-		IObjectTrigger deathTrigger = (IObjectTrigger)Game.CreateObject("OnPlayerDeathTrigger"); 
-		deathTrigger.SetScriptMethod("Death");
+			// slow tick trigger
+			CreateTimer(1000, 0, "VerySlowTick", "");
 
-	// prepare map
-	foreach (IObject obj in Game.GetObjectsByName(new string[]{"SpawnWeapon", "SpawnWeaponArea", "SpawnWeaponAreaCeiling"})) obj.Remove();
-	if(HOSTING_ACTIVATED) Game.GetPlayers()[0].Remove();
+			// death trigger
+			IObjectTrigger deathTrigger = (IObjectTrigger)Game.CreateObject("OnPlayerDeathTrigger"); 
+			deathTrigger.SetScriptMethod("Death");
 
-	// some messages
-	Game.RunCommand("/MSG #Wizards v0.1.1 (beta)");
-	if (HOSTING_ACTIVATED) Game.RunCommand("/MSG Host is AFK");
-	Game.ShowPopupMessage("Controls:\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=WALKING] + [KEY=BLOCK_AIM] - change spellbook\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=BLOCK_AIM] - change spell\n[KEY=ATTACK] - use spell\n", new Color(220,50,50));
+		// prepare map
+		//foreach (IObject obj in Game.GetObjectsByName(new string[]{"SpawnWeapon", "SpawnWeaponArea", "SpawnWeaponAreaCeiling"})) obj.Remove();
+		if(HOSTING_ACTIVATED) Game.GetPlayers()[0].Remove();
+
+		// some messages
+		ModMessage("v0.1.1 (beta)");
+		if (HOSTING_ACTIVATED) ModMessage("Host is AFK");
+		Game.ShowPopupMessage("Controls:\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=WALKING] + [KEY=BLOCK_AIM] - change spellbook\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=BLOCK_AIM] - change spell\n[KEY=ATTACK] - use spell\n", new Color(220,50,50));
+	} else {
+		ModMessage("This map is restricted.");
+	}
 }
 
 public void PrepareStartSpells(){
@@ -162,7 +216,7 @@ public void Death(TriggerArgs args){
 		for(int i = players.Count - 1; i >=0; i--){
 			PlayerData data = players[i];
 			if (data.Player == ply){
-				if (data.Label != null) data.Label.Remove();
+				if (players[i].Label != null) players[i].Label.Remove();
 				players.RemoveAt(i);
 			}
 		}
@@ -199,7 +253,11 @@ public void Tick_PopupMessage(){
 
 public void Tick_DeadPlayers(){
 	for(int i = players.Count - 1; i >=0; i--){
-		if (players[i].Player.IsRemoved) players.RemoveAt(i);
+
+		if (players[i].Player.IsRemoved){
+			if (players[i].Label != null) players[i].Label.Remove();
+			players.RemoveAt(i);
+		}
 	}
 }
 
@@ -305,9 +363,8 @@ public void Tick_Stats(){
 		PlayerData data = players[i];
 		IPlayer ply = data.Player;
 
-		// mana
-		if (data.Mana < 100 && Game.TotalElapsedGameTime >= data.LastUseTime + 2000f) data.Mana += 1;
-		else if (data.Mana > 100) data.Mana = 100;
+		if (ply.GetHealth() > data.LastHealth)
+			data.Mana += (int)(ply.GetHealth() - data.LastHealth);
 
 		// damage
 		if (ply.GetUser() != null) ply.SetHealth(data.StartHealth -
@@ -315,8 +372,12 @@ public void Tick_Stats(){
 			ply.Statistics.TotalMeleeDamageTaken / 5f +
 			ply.Statistics.TotalProjectileDamageTaken +
 			ply.Statistics.TotalExplosionDamageTaken +
-			ply.Statistics.TotalFireDamageTaken) +
+			ply.Statistics.TotalFireDamageTaken)/ 2f +
 			data.AddedHealth);
+		data.LastHealth = ply.GetHealth();
+
+		// mana
+		if (data.Mana < 100 && Game.TotalElapsedGameTime >= data.LastUseTime + 2000f) data.Mana += 1;
 
 		// freezing
 		if (data.IsFrozen){
@@ -351,12 +412,16 @@ public void Tick_Projectiles(){
 	}
 }
 
-// remove weapons from map and players
+// remove weapons from map
 public void Tick_Weapons(){
-	foreach(IPlayer ply in (Game.GetPlayers())){
-		ply.RemoveWeaponItemType(WeaponItemType.Rifle);
-		ply.RemoveWeaponItemType(WeaponItemType.Handgun);
-		ply.RemoveWeaponItemType(WeaponItemType.Thrown);
+	foreach(IObject obj in Game.GetObjectsByName(restrictedWeapons)){
+		if (rand.Next(2) == 0)
+			Game.CreateObject(
+				replacingWeapons[rand.Next(replacingWeapons.Length)],
+				obj.GetWorldPosition(),
+				0f
+			);
+		obj.Remove();
 	}
 }
 
@@ -483,12 +548,12 @@ public void SpellUsed(PlayerData data){
 		break;
 	case "Heal":
 		{
-			float healAmount = 12f;
-			if (ply.GetHealth() == 100f){
+			float healAmount = 6f;
+			if (ply.GetHealth() >= 50f){
 				data.Mana += data.Books[data.BookId].Spells[data.SpellId].ManaCost;
 				Game.PlayEffect("PWT", ply.GetWorldPosition(), "Health full!");
-			} else if (ply.GetHealth() > 100f - healAmount)
-				data.AddedHealth += 100f - ply.GetHealth();
+			} else if (ply.GetHealth() > 50f - healAmount)
+				data.AddedHealth += 50f - ply.GetHealth();
 			else data.AddedHealth += healAmount;
 		}
 		break;
@@ -583,16 +648,17 @@ public void SpellUsed(PlayerData data){
 		break;
 	case "SuperJump":
 		{
-			for (int i = 0; i <= 2; i++){
-				IObject obj = Game.CreateObject("InvisibleBlock",
+			ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
+			//for (int i = 0; i <= 2; i++){
+				IObject obj = Game.CreateObject("InvisiblePlatform",
 					ply.GetWorldPosition() + new Vector2(0f, -8f),
 					0);
 				obj.SetBodyType(BodyType.Dynamic);
-				obj.SetLinearVelocity(new Vector2(0, 15f));
+				obj.SetLinearVelocity(new Vector2(0, 12f));
 				obj.SetAngularVelocity((-1) * ply.FacingDirection * 5f);
 				projs.Add(new ProjData(obj, Game.TotalElapsedGameTime, 50f, false));
-				for (int j = 0; j < 15; j++) Game.PlayEffect("TR_D", ply.GetWorldPosition() + new Vector2(rand.Next(-8,8), rand.Next(-2,2)));
-			}
+				for (int j = 0; j < 18; j++) Game.PlayEffect("TR_D", ply.GetWorldPosition() + new Vector2(rand.Next(-12,12), rand.Next(-2,2)));
+			//}
 			Game.PlayEffect("CAM_S", Vector2.Zero, 1f, 500f, true);
 		}
 		break;
@@ -709,22 +775,26 @@ public void SpellTrigger_Revive(TriggerArgs args){
 	IPlayer ply = (IPlayer)args.Sender;
 		if (ply.IsDead && GetPlayerData(ply).Player != null){
 			PlayerData data = GetPlayerData(ply);
-			float health = (float)rand.Next(15,50);
+			if (UserStillHere(data.User)){
+				float health = (float)rand.Next(15,50);
 
-			IPlayer revivedPlayer = Game.CreatePlayer(ply.GetWorldPosition());
-			revivedPlayer.SetUser(data.User);
-			revivedPlayer.SetProfile(data.User.GetProfile());
-			revivedPlayer.SetHealth(health);
-			revivedPlayer.SetTeam(reviveTeam);
-			data.Player.Remove();
-			data.Player = revivedPlayer;
+				IPlayer revivedPlayer = Game.CreatePlayer(ply.GetWorldPosition());
+				revivedPlayer.SetUser(data.User);
+				revivedPlayer.SetProfile(data.User.GetProfile());
+				revivedPlayer.SetHealth(health);
+				revivedPlayer.SetTeam(reviveTeam);
+				data.Player.Remove();
+				data.Player = revivedPlayer;
 
-			GetPlayerData(revivedPlayer).StartHealth = health;
-			GetPlayerData(revivedPlayer).Player = revivedPlayer;
+				GetPlayerData(revivedPlayer).StartHealth = health;
+				GetPlayerData(revivedPlayer).Player = revivedPlayer;
 
-			Game.PlayEffect("PWT", revivedPlayer.GetWorldPosition(), "REVIVE!");
-			Game.PlayEffect("Electric", revivedPlayer.GetWorldPosition());
-
+				Game.PlayEffect("PWT", revivedPlayer.GetWorldPosition(), "REVIVE!");
+				Game.PlayEffect("Electric", revivedPlayer.GetWorldPosition());
+				} else {
+					Game.PlayEffect("PWT", ply.GetWorldPosition(), "Player left!");
+					ply.Gib();
+				}
 			foreach (IObject obj in Game.GetObjectsByCustomId("ReviveTrigger")) obj.Remove();
 		}
 	}
@@ -734,12 +804,22 @@ public void SpellTrigger_Revive(TriggerArgs args){
 //============================< HELPERS >===========================//
 //==================================================================//
 
+public void ModMessage(string text){
+	Game.RunCommand("/MSG #Wizards mod: " + text);
+}
+
 // get player data by IPlayer
 private PlayerData GetPlayerData(IPlayer ply){
 	for(int i = players.Count - 1; i >=0; i--){
 		if (players[i].Player == ply) return players[i];
 	}
 	return new PlayerData(); 
+}
+
+public bool UserStillHere(IUser user){
+	foreach (IUser usr in Game.GetActiveUsers())
+		if (usr.UserId == user.UserId) return true;
+	return false;
 }
 
 // create timer trigger
