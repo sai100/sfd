@@ -1,57 +1,42 @@
 //==================================================================//
 //============<    OCTOBATTLE GAMEMODE BY #OCTOTHORP    >===========//
-//============<                  V 1.1                  >===========//
+//============<                  V 1.0                  >===========//
 //==================================================================//
 //=====================< OCTOBATTLE - settings >====================//
 //=============================<general>============================//
-private const bool SHOW_SETTINGS = true;			    // set to "true" to announce settings in the beginning
-private const bool GIB_ON_LEAVE = true;				    // set to "true" to gib players when they leave
+private const bool SHOW_SETTINGS = true;							// set to "true" to announce settings in the beginning
+private const bool GIB_ON_LEAVE = true;								// set to "true" to gib players when they leave
 //==========================<hardcore mode>=========================//
-private const bool HARDCORE_ACTIVATED = false;			    // set to "true" to enable hardcore mode
-private const float HC_GUNS_MULTIPLIER = (float) 2.0;		    // damage multiplier for guns
-private const float HC_MELEE_MULTIPLIER = (float) 2.0;		    // damage multiplier for melee
-private const float HC_FALL_MULTIPLIER = (float) 3.5;		    // damage multiplier for fall
-private const float HC_FIRE_MULTIPLIER = (float) 3.0;		    // damage multiplier for fire
-private const float HC_EXPL_MULTIPLIER = (float) 2.0;		    // damage multiplier for explosions
-private const bool HC_BLOCK_DAMAGE = true;			    // set to "true" to make blocked attacks damage players
-private const float HC_BLOCK_DAMAGE_AMOUNT = (float) 3;		    // damage in HP given by blocked attack
-private const bool HC_BLEEDING = true;				    // set te "true" to enable bleeding on getting some damage
-private const bool HC_BLEEDING_ON_START = false;		    // set te "true" to make people bleed in the very beginning
-private const int HC_BLEEDING_CHANCE = 3;			    // bleeding will start with chance "1/x" where x is this variable
-private const float HC_BLEEDING_TRIGGER_HP = (float) 20;	    // damage in hp after that bleeding will start find a chance
-private const bool HC_CANT_PUT_FIRE_OFF = false;		    // set to "true" to disallow players to roll to stop burning
-//private const bool HC_WEAPONS_BREAK = false;			    // set to "true" to allow weapons to break [WIP]
+private const bool HARDCORE_ACTIVATED = true;					// set to "true" to enable custom damage mode
+private const float HC_GUNS_MULTIPLIER = (float) 2.0;				// damage multiplier for guns
+private const float HC_MELEE_MULTIPLIER = (float) 2.0;				// damage multiplier for melee
+private const float HC_FALL_MULTIPLIER = (float) 3.5;				// damage multiplier for fall
+private const float HC_FIRE_MULTIPLIER = (float) 3.0;				// damage multiplier for fire
+private const float HC_EXPL_MULTIPLIER = (float) 2.0;				// damage multiplier for explosions
+private const bool HC_BLEEDING = true;								// set te "true" to enable bleeding on getting some damage
+private const int HC_BLEEDING_CHANCE = 3;							// bleeding will start with chance "1/x" where x is this variable
+private const float HC_BLEEDING_TRIGGER_HP = (float) 20;			// damage in hp after that bleeding will start find a chance
+private const bool HC_CANT_PUT_FIRE_OFF = false;					// set to "true" to disallow players to roll to stop burning
+//private const bool HC_WEAPONS_BREAK = false;						// set to "true" to allow weapons to break [WIP]
 //========================<revive system>===========================//
-private const bool REVIVE_ACTIVATED = true;			    // set to "true" to activate reviving system
-private const bool REVIVE_TEAMMATES_FASTER = true;		    // set to "true" to revive teammates faster
-private const int REVIVE_DURATION = 8;				    // time in seconds needed to stay at dead player to revive him
-private const int REVIVE_TIME_ALIVE = 25;			    // time in seconds for recently died player to be revived
-private const bool REVIVE_CAPTURE_ENEMIES = true;		    // set to "true" to allow reviving enemies and making them allies
-private const bool REVIVE_BLEEDING = true;			    // set to "true" to make players bleed before death
-private const bool REVIVE_FINISH_PLAYERS = true;		    // set to "true" to allow players finish people
-private const int REVIVE_FINISH_HEALTH = 20;			    // health of unfinished player
+private const bool REVIVE_ACTIVATED = true;							// set to "true" to activate reviving system
+private const bool REVIVE_TEAMMATES_FASTER = true;					// set to "true" to revive teammates faster
+private const int REVIVE_DURATION = 8;								// time in seconds needed to stay at dead player to revive him
+private const int REVIVE_TIME_ALIVE = 25;							// time in seconds for recently died player to be revived
+private const bool REVIVE_CAPTURE_ENEMIES = true;					// set to "true" to allow reviving enemies and making them allies
+private const bool REVIVE_BLEEDING = true;							// set to "true" to make players bleed before death
+private const bool REVIVE_FINISH_PLAYERS = true;					// set to "true" to allow players finish people
+private const int REVIVE_FINISH_HEALTH = 20;						// health of unfinished player
 //========================<instagib mode>===========================//
-private const bool INSTAGIB_ACTIVATED = false;			    // set to "true" to activate instagib mode
-private const bool INSTAGIB_RANDOM = true;			    // set to "true" to make instagib randomly appear with selected chance
-private const int INSTAGIB_DELAY = 4000;			    // time in ms after that players would be given a weapon
-private const int INSTAGIB_CHANCE = 10;				    // instagib will start with chance "1/x" where x is this variable
-private const bool INSTAGIB_MELEE = false;			    // set to "true" to set melee weapons only
-private const bool INSTAGIB_EXPLODE = true;			    // set to "true" explode players on death
-private const bool INSTAGIB_GIVE_SLOMO = true;			    // set to "true" to give players slow motion at start
+private const bool INSTAGIB_ACTIVATED = false;						// set to "true" to activate instagib mode
+private const bool INSTAGIB_RANDOM = true;							// set to "true" to make instagib randomly appear with selected chance
+private const int INSTAGIB_DELAY = 4000;							// time in ms after that players would be given a weapon
+private const int INSTAGIB_CHANCE = 5;								// instagib will start with chance "1/x" where x is this variable
+private const bool INSTAGIB_MELEE = false;							// set to "true" to set melee weapons only
+private const bool INSTAGIB_EXPLODE = true;							// set to "true" explode players on death
 //=========================<commentator>============================//
-private const bool COMMENT_ACTIVATED = true;			    // set to "true" to make commenter speak through pop-ups
-private const int COMMENT_TYPE_SPEED = 50;			    // number of leters per seconds when the commenter speaks
-//=========================<time limits>============================//
-private const bool TIME_LIMIT_ACTIVATED = false;		    // set to "true" to remove (or explode) host player at start
-private const int TIME_LIMIT_SECONDS = 1 * 60;			    // set to "true" to set host on timer bomb
-private const string TIME_LIMIT_MODE = "auto";			    // set to "main": start timer at beginning; "auto": when 2 teams or 2 players left
-//===========================<hosting>==============================//
-private const bool HOSTING_ACTIVATED = false;			    // set to "true" to remove (or explode) host player at start
-private const bool HOSTING_TIME_BOMB = false;			    // set to "true" to set host on timer bomb
-private const int HOSTING_BOMB_TIMER = 5;			    // starting time on host's time bomb
-//==========================<Kill dying players>====================//
-private const bool EXPLODE_ON_DEATH = true;			    // set to true to make dying players explode
-private const float EXPLODE_ON_DEATH_DELAY = 5f;		    // Time before the corpse explode. Set to 0 for instant explosion. keep an f after the number
+private const bool COMMENT_ACTIVATED = false;						// set to "true" to make commenter speak through pop-ups
+private const int COMMENT_TYPE_SPEED = 50;							// number of leters per seconds when the commenter speaks
 //==================================================================//
 //=================< DO NOT TOUCH ANYTHING IN BELOW >===============//
 //==============< IF YOU'RE NOT SURE WHAT YOU'RE DOING >============//
@@ -60,17 +45,6 @@ private const float EXPLODE_ON_DEATH_DELAY = 5f;		    // Time before the corpse 
 
 private Random rand = new Random();
 private bool INSTAGIB_ON = false;
-
-// hosting vars
-private IPlayer hostPlayer = null;
-IObjectText bombTimeLabel = null;
-
-// time limit vars
-private float m_startTime = 0;
-private int m_lastElapsedSeconds = 0;
-private bool m_twoOpponentsRemaining = false;
-private bool WAS_ACTIVATED;
-
 private int currentChar = 1;
 private string text = "";
 private string [] typingMachine_templatesWelcome = new string []{
@@ -86,43 +60,21 @@ private string [] typingMachine_templatesRevive = new string [] {
 	"{0} wasn't supposed to be dead?" };
 private string [] typingMachine_templatesDeath= new string [] {
 	"{0} is knocked down",
-	"Someone killed {0}",
-	"(Un)fortunately {0} died",
-	"{0} is dead because of lags (as he says)",
-	"{0} wasn't my bet anyway",
-	"We've got here {0}'s corpse!" };
+	"{0} failed a saving throw!",
+	"{0} is dead because of lags",
+	"{0} wasn't my bet anyway!" };
 private string [] typingMachine_templatesGib = new string [] {
 	"{0} has spilled his/her guts on the ground",
 	"{0}'s blood painted the wall in red!",
 	"{0} felt no pain (in fact yes)",
 	"{0} is looking like an IKEA kit!",
-	"{0} will never look as before"}; 
+	"{0} will never looks the same"}; 
 private string [] typingMachine_templatesDisconnect = new string [] {
 	"{0} left us",
 	"{0} gave up",
 	"{0} abandoned the battle",
 	"{0} knew it wasn't his war!",
 	"{0} cowardly ran away"}; 
-private string [] typingMachine_templatesDraw = new string [] {
-	"No one won, such a shame...",
-	"Draws !\n No, not with a pen...",
-	"What have you done ?",
-	"And the winner is ... OH ! COME ON !",
-	"He drew first."}; 
-private string [] typingMachine_templatesWin = new string [] {
-	"And the winner is ... {0} !",
-	"{0} is the winner !",
-	"Well played , {0} !",
-	"{0} won because he is a noob!",
-	"Today's baddas is {0} !"}; 
-private string [] typingMachine_templatesWinTeam = new string [] {
-	"And the winner is ... {0} !",
-	"{0} is the winner !",
-	"Nice demonstration of teamwork , {0} !",
-	"{0} won because other team is noob!",
-	"{0} > all"}; 
-
-private bool gameOverSaid = false;
 
 // ============================ |
 // ========< THE CODE >======== |
@@ -139,7 +91,6 @@ private class DeadPlayerData {
 	public float DamageTaken = 0f;
 	public IObjectText Label = null;
 	public PlayerTeam Team = PlayerTeam.Independent;
-
 	public DeadPlayerData(float deathTime, IUser user, IPlayer body, IObjectText label, PlayerTeam team, float damageTaken){
 		this.DeathTime = deathTime;
 		this.User = user;
@@ -157,11 +108,10 @@ private class PlayerData {
 	public float BleedDamage = 0f;
 	public float HealthNeeded = 0f;
 	public float HealthAdded = 0f;
-
 	public IUser User = null;
 	public IPlayer Body = null;
 	public bool WasSetOnFire = false;
-	public bool IsBleeding = HC_BLEEDING_ON_START;
+	public bool IsBleeding = false;
 	public PlayerData(float startHealth, IUser user, IPlayer body, bool wasSetOnFire){
 		this.StartHealth = startHealth;
 		this.User = user;
@@ -186,12 +136,6 @@ public void OnStartup(){
 		timerTriger2.SetRepeatCount(0);
 		timerTriger2.SetScriptMethod("TickMid");
 		timerTriger2.Trigger();
-		// slow tick trigger
-		IObjectTimerTrigger timerTriger3 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
-		timerTriger3.SetIntervalTime(1000);
-		timerTriger3.SetRepeatCount(0);
-		timerTriger3.SetScriptMethod("TickSlow");
-		timerTriger3.Trigger();
 		// death tigger
 		IObjectTrigger deathTrigger = (IObjectTrigger)Game.CreateObject("OnPlayerDeathTrigger"); 
 		deathTrigger.SetScriptMethod("Death");
@@ -199,53 +143,30 @@ public void OnStartup(){
 		// show settings trigger
 		if (SHOW_SETTINGS){
 			ShowSettings();
-			IObjectTimerTrigger timerTriger4 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
-			timerTriger4.SetIntervalTime(5000);
-			timerTriger4.SetRepeatCount(1);
-			timerTriger4.SetScriptMethod("HideSettings");
-			timerTriger4.CustomId = "HideSettingsTrigger";
-			timerTriger4.Trigger();
+			IObjectTimerTrigger timerTriger3 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+			timerTriger3.SetIntervalTime(5000);
+			timerTriger3.SetRepeatCount(1);
+			timerTriger3.SetScriptMethod("HideSettings");
+			timerTriger3.Trigger();
 		}
 
 	// settings based method executions
 	if (INSTAGIB_ON)  Prepare_Instagib();
 	else if (HARDCORE_ACTIVATED) Prepare_CustomDamage();
 
-	if (HOSTING_ACTIVATED){
-		hostPlayer = Game.GetActiveUsers()[0].GetPlayer();
-
-		if (!HOSTING_TIME_BOMB) hostPlayer.Remove();
-		else {
-			// tick trigger
-			IObjectTimerTrigger timerTriger5 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
-			timerTriger5.SetIntervalTime(1000);
-			timerTriger5.SetRepeatCount(0);
-			timerTriger5.SetScriptMethod("Tick_Bomb");
-			timerTriger5.CustomId = "Tick_BombTrigger";
-			timerTriger5.Trigger();
-		}
-	}
-
-	// some messages
-	Game.RunCommand("/MSG #Battle v1.1 (beta)");
-	if (HOSTING_ACTIVATED) Game.RunCommand("/MSG Host is AFK");
-	if (INSTAGIB_ON && INSTAGIB_RANDOM) Game.RunCommand("/MSG INSTAGIB ROUND!");
+	Game.RunCommand("/MSG #Battle v1.0");
 }
 
 public void TickFast(TriggerArgs args){
 	if (INSTAGIB_ON) Tick_Instagib();
-	if (HARDCORE_ACTIVATED && !INSTAGIB_ON) Tick_Hardcore_Main();
+	if (HARDCORE_ACTIVATED && !INSTAGIB_ON) Tick_CustomDamage();
+
 }
 
 public void TickMid(TriggerArgs args){
 	if (REVIVE_ACTIVATED && !INSTAGIB_ON) Tick_Revive();
 }
 
-public void TickSlow(TriggerArgs args){
-	if (TIME_LIMIT_ACTIVATED) Tick_TimeLimit();
-	if (COMMENT_ACTIVATED) Tick_Commentator();
-	if (EXPLODE_ON_DEATH) Tick_ExplodeOnDeath();
-}
 
 public void ShowSettings(){
 	string settings = "";
@@ -253,23 +174,16 @@ public void ShowSettings(){
 		settings += "| - Instagib mode\n";
 		if (INSTAGIB_EXPLODE) settings += "   | - explode players is ON\n";
 			else settings += "   | - explode players is OFF\n";
-		if (INSTAGIB_GIVE_SLOMO) settings += "   | - give slow motion is ON\n";
-			else settings += "   | - give slow motion is OFF\n";
 	} else {
-		if (INSTAGIB_ACTIVATED)
-			if (INSTAGIB_RANDOM)
-				settings += "| - Instagib chance: " + string.Format("{0:0}%\n", 1f/(float)INSTAGIB_CHANCE * 100f);
 		if (HARDCORE_ACTIVATED){
-			settings += "| - hardcore mode is ON\n";
+			settings += "| - custom damage mode is ON\n";
 			if (HC_BLEEDING) settings += "   | - bleeding is ON\n";
 				else settings += "   | - bleeding is OFF\n";
-			if (HC_BLOCK_DAMAGE) settings += "   | - block damage is ON\n";
-				else settings += "   | - block damage is OFF\n";
 			/*if (HC_WEAPONS_BREAK) settings += "   | - weapon break is ON\n";
 				else settings += "   | - weapon break is OFF\n";*/
 			if (HC_CANT_PUT_FIRE_OFF) settings += "   | - can't put fire off is ON\n";
 				else settings += "   | - can't put fire off is OFF\n";
-		} else settings += "| - hardcore mode is OFF\n";
+		} else settings += "| - custom damage mode is OFF\n";
 		if (REVIVE_ACTIVATED){
 			settings += "| - Revive is ON\n";
 			if (REVIVE_CAPTURE_ENEMIES) settings += "   | - capture enemies is ON\n";
@@ -278,18 +192,13 @@ public void ShowSettings(){
 				else settings += "   | - finish players is OFF\n";
 		} else settings += "| - Revive is OFF\n";
 	}
-	if (EXPLODE_ON_DEATH) settings += "| - explode players on death is ON\n";
 	if (COMMENT_ACTIVATED) settings += "| - Commentator is ON\n";
 		else settings += "| - Commentator is OFF\n";
-	if (TIME_LIMIT_ACTIVATED) settings += "| - Time limit in mode '" + TIME_LIMIT_MODE + "' is ON";
-
-
-	Game.ShowPopupMessage("Current #Battle settings:\n" + settings, new Color(100,220,255));
+	Game.ShowPopupMessage("Current OctoBattle settings:\n" + settings, new Color(100,220,255));
 }
 
 public void HideSettings(TriggerArgs args){
 	//Welcoming message
-	Game.GetSingleObjectByCustomId("HideSettingsTrigger").Remove();
 	if (COMMENT_ACTIVATED) TypingMachine_Print("beginning" , new string[]{""});
 	else Game.HidePopupMessage();
 }
@@ -314,7 +223,6 @@ public void Death(TriggerArgs args){
 		if (ply.GetUser() != null) TypingMachine_Print("death" , new string[] {ply.GetUser().Name});
 		else TypingMachine_Print("disconnect", new string[] {ply.GetProfile().Name});
 	}
-	if (EXPLODE_ON_DEATH && EXPLODE_ON_DEATH_DELAY == 0)Game.TriggerExplosion(ply.GetWorldPosition());	
 }
 
 // ============================= |
@@ -334,12 +242,8 @@ public void Tick_Revive(){
 			deadPlayers[i].Label.Remove();
 			IObjectText label = (IObjectText)Game.CreateObject("Text", body.GetWorldPosition() + new Vector2(-6, 16), 0);
 
-			float damage = (body.Statistics.TotalFallDamageTaken / 3f) +
-				body.Statistics.TotalMeleeDamageTaken +
-				body.Statistics.TotalProjectileDamageTaken +
-				body.Statistics.TotalExplosionDamageTaken +
-				body.Statistics.TotalFireDamageTaken;
-				
+			float damage = body.Statistics.TotalExplosionDamageTaken + body.Statistics.TotalFireDamageTaken + body.Statistics.TotalMeleeDamageTaken
+				+ body.Statistics.TotalProjectileDamageTaken + (body.Statistics.TotalFallDamageTaken / 5f);
 			if (REVIVE_FINISH_PLAYERS && damage > deadPlayers[i].DamageTaken + (float)REVIVE_FINISH_HEALTH){
 				diedNow = true;
 				deadPlayers.RemoveAt(i);
@@ -449,14 +353,13 @@ public void Prepare_Instagib(){
 	IObjectTimerTrigger timerTriger = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
 	timerTriger.SetIntervalTime(INSTAGIB_DELAY);
 	timerTriger.SetRepeatCount(1);
-	timerTriger.SetScriptMethod("Prepare_Instagib_GiveItems");
+	timerTriger.SetScriptMethod("Prepare_Instagib_GiveSnipers");
 	timerTriger.Trigger();
 }
 
-public void Prepare_Instagib_GiveItems(TriggerArgs args){
+public void Prepare_Instagib_GiveSnipers(TriggerArgs args){
 	foreach (IPlayer ply in Game.GetPlayers()){
 		ply.GiveWeaponItem(WeaponItem.SNIPER);
-		if (INSTAGIB_GIVE_SLOMO) ply.GiveWeaponItem(WeaponItem.SLOWMO_5);
 	}
 }
 
@@ -467,7 +370,7 @@ public void Prepare_CustomDamage(){
 			players.Add(new PlayerData(100f, ply.GetUser(), ply, false));
 }
 
-public void Tick_Hardcore_Main(){
+public void Tick_CustomDamage(){
 	for(int i = players.Count - 1; i >=0; i--){
 		PlayerData data = players[i];
 		if (data.Body.IsDead || data.Body.IsRemoved) players.RemoveAt(i);
@@ -480,18 +383,17 @@ public void Tick_Hardcore_Main(){
 				stats.TotalExplosionDamageTaken * HC_EXPL_MULTIPLIER +
 				stats.TotalFireDamageTaken * HC_FIRE_MULTIPLIER +
 				data.BleedDamage;
-			if (HC_BLOCK_DAMAGE) damage +=  stats.TotalBlockedAttacks * HC_BLOCK_DAMAGE_AMOUNT;
 			float damage_causingBleed = stats.TotalMeleeDamageTaken * HC_MELEE_MULTIPLIER +
 				stats.TotalProjectileDamageTaken * HC_GUNS_MULTIPLIER +
 				stats.TotalExplosionDamageTaken * HC_EXPL_MULTIPLIER;
 
 			if (data.StartHealth - damage > 0f){
 				float healthNow = data.Body.GetHealth();
-				if (healthNow > data.LastHealth /*&& data.HealthNeeded < healthNow - data.LastHealth*/){
+				if (healthNow > data.LastHealth && data.HealthNeeded < healthNow - data.LastHealth){
 					if (data.IsBleeding){
 						data.IsBleeding = false;
 						data.HealthNeeded += healthNow - data.LastHealth - 25f;
-					} else data.HealthNeeded += healthNow - data.LastHealth + 10f;
+					} else data.HealthNeeded += healthNow - data.LastHealth - 15f;
 				} else if (data.HealthNeeded > 0f){
 					data.HealthAdded += 0.5f;
 					data.HealthNeeded -= 0.5f;
@@ -504,7 +406,7 @@ public void Tick_Hardcore_Main(){
 				if (data.IsBleeding){
 					data.BleedDamage += 0.1f;
 					if (rand.Next(6) == 0)
-						Game.PlayEffect("TR_B", data.Body.GetWorldPosition() + new Vector2(8,0) + new Vector2(rand.Next(-2,2),rand.Next(-2,2)));
+					Game.PlayEffect("TR_B", data.Body.GetWorldPosition() + new Vector2(8,0) + new Vector2(rand.Next(-2,2),rand.Next(-2,2)));
 				}
 
 				data.Body.SetHealth(data.StartHealth - damage + data.HealthAdded);
@@ -518,126 +420,6 @@ public void Tick_Hardcore_Main(){
 		}
 	}
 }
-
-int secondsRemaining = HOSTING_BOMB_TIMER;
-public void Tick_Bomb(TriggerArgs args){
-	if (bombTimeLabel != null) bombTimeLabel.Remove();
-	if (secondsRemaining > 0 && !hostPlayer.IsRemoved){
-		bombTimeLabel = (IObjectText)Game.CreateObject("Text", hostPlayer.GetWorldPosition() + new Vector2(-10, 24), 0);
-		bombTimeLabel.SetText("0:" + string.Format("{0:00}", secondsRemaining));
-		bombTimeLabel.SetTextColor(new Color(255, 0, 0));
-		secondsRemaining --;
-	} else {
-		if (!hostPlayer.IsRemoved){
-			Game.TriggerExplosion(hostPlayer.GetWorldPosition());
-			hostPlayer.Gib();
-		}
-		Game.GetSingleObjectByCustomId("Tick_BombTrigger").Remove();
-	}
-}
-
-public void Tick_TimeLimit(){
-	if (TimeLimit_Check() && Game.GetSingleObjectByCustomId("HideSettingsTrigger") == null){
-		if (!m_twoOpponentsRemaining){
-			// start tracking time
-			// store current elapsed time
-			m_startTime = Game.TotalElapsedGameTime;
-			m_twoOpponentsRemaining = true;
-			WAS_ACTIVATED = true;
-		}
-	   	int currentElapsedSeconds = (int)((Game.TotalElapsedGameTime - m_startTime) / 1000f);
-	   	if (currentElapsedSeconds != m_lastElapsedSeconds){
-		  // update text
-		  	int totalSecondsRemaining = TIME_LIMIT_SECONDS - currentElapsedSeconds;
-		  	int minutesRemaining = totalSecondsRemaining / 60;
-		  	int secondsRemaining = totalSecondsRemaining - minutesRemaining * 60;
-		  	if (totalSecondsRemaining > 0){
-			  	if (minutesRemaining > 0){
-				 	Game.ShowPopupMessage(string.Format("Time remaining {0}:{1:00} minutes", minutesRemaining, secondsRemaining));
-			  	} else {
-				 	Game.ShowPopupMessage(string.Format("Time remaining {0:00} seconds", secondsRemaining));
-			  	}
-		  	} else {
-			 	Game.HidePopupMessage();
-			 	Game.SetGameOver("Time's up!");
-		  	}
-		  m_lastElapsedSeconds = currentElapsedSeconds;
-	   	}
-   	}
-   	else if (WAS_ACTIVATED)
-   	{
-		Game.HidePopupMessage();
-   	}
-}
-
-public bool TimeLimit_Check(){
-	Dictionary<PlayerTeam, int> teams = new Dictionary<PlayerTeam, int>();
-	if (TIME_LIMIT_MODE == "main") return true;
-	else if (TIME_LIMIT_MODE == "auto"){
-		PlayerTeam playerATeam = PlayerTeam.Independent;
-		PlayerTeam playerBTeam = PlayerTeam.Independent;
-		int opponents = 0;
-
-		foreach (IPlayer ply in Game.GetPlayers()){
-			if (!ply.IsDead){
- 			PlayerTeam team = ply.GetTeam();
-				if (!teams.ContainsKey(team)) teams.Add(team, 1);
-				else teams[team] ++;
-		
-				opponents++;
-				switch(opponents){
-					case 1: playerATeam = ply.GetTeam(); break;
-					case 2: playerBTeam = ply.GetTeam(); break;
- 				}   
-  			}
-		}
-
-		return ((teams.Count == 2 && teams.ContainsValue(1)) || (opponents == 2 && playerATeam == PlayerTeam.Independent));
-	}
-
-	return false;
-}
-
-
-public void Tick_Commentator(){
-	IObjectTimerTrigger timerTriger6 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
-	timerTriger6.SetIntervalTime(10000);
-	timerTriger6.SetRepeatCount(1);
-	timerTriger6.SetScriptMethod("GameOver_Commentator");
-	timerTriger6.Trigger();
-}
-
-public void GameOver_Commentator(TriggerArgs args){
-	if(Game.IsGameOver && (!gameOverSaid)){
-		List <IPlayer> tempPlyList = new List <IPlayer>();
-		foreach(IPlayer ply in Game.GetPlayers()){
-			if(!ply.IsDead) tempPlyList.Add(ply);
-		}
-		switch(tempPlyList.Count) {
-			case 0 : TypingMachine_Print("draw", new string[] {""}); break;
-			case 1 : TypingMachine_Print("win", new string[] {tempPlyList[0].GetProfile().Name}); break;
-			default : {
-				if (LastTeam() != "none") TypingMachine_Print("winTeam", new string[]{LastTeam()});
-				else TypingMachine_Print("draw", new string[] {""});
-				break;
-			}
-		}
-		gameOverSaid = true;
-	}
-}
-
-public void Tick_ExplodeOnDeath(){
-	if (deadPlayers.Count != 0){
-		for(int i = deadPlayers.Count -1; i > -1; i--){
-			DeadPlayerData expd = deadPlayers[i];
-			if (Game.TotalElapsedGameTime - expd.DeathTime > 1000f * EXPLODE_ON_DEATH_DELAY){
-				Game.TriggerExplosion(expd.Body.GetWorldPosition());
-				deadPlayers.RemoveAt(i);
-			}
-		}
-	}
-}
-
 
 // ============================= |
 // =========< HELPERS >========= |
@@ -667,9 +449,6 @@ public void TypingMachine_Print(string reason, string[] args) {
 		case "beginning" : text = typingMachine_templatesWelcome[rand.Next(typingMachine_templatesWelcome.Length)]; break; 
 		case "gib" : text = string.Format(typingMachine_templatesGib[rand.Next(typingMachine_templatesGib.Length)], args[0]); break;
 		case "disconnect" :  text = string.Format(typingMachine_templatesDisconnect[rand.Next(typingMachine_templatesDisconnect.Length)], args[0]); break;
-		case "draw" : text = typingMachine_templatesDraw[rand.Next(typingMachine_templatesDraw.Length)]; break; 
-		case "win" : text = string.Format(typingMachine_templatesWin[rand.Next(typingMachine_templatesWin.Length)], args[0]); break;
-		case "winTeam" : text = string.Format(typingMachine_templatesWinTeam[rand.Next(typingMachine_templatesWinTeam.Length)], args[0]); break;
 		default : break;
 	}
 
@@ -709,23 +488,4 @@ public void TypingMachine_Stop(){
 
 public void TypingMachine_Clear(TriggerArgs args){
 	Game.HidePopupMessage();
-}
-
-public string LastTeam(){
-	PlayerTeam testTeam = PlayerTeam.Independent;
-	foreach(IPlayer ply in Game.GetPlayers()){
-		if(!ply.IsDead) testTeam = ply.GetTeam(); break;
-	}
-		//return "none" if at least one living player got a different team
-	foreach(IPlayer ply in Game.GetPlayers()){
-		if(!ply.IsDead && ply.GetTeam() != testTeam) return "none";
-	}
-	switch (testTeam) {
-		case PlayerTeam.Team1 : return "Blue team"; break;
-		case PlayerTeam.Team2 : return "Red team"; break;
-		case PlayerTeam.Team3 : return "Green team"; break;
-		case PlayerTeam.Team4 : return "Yellow team"; break;
-		default : break;
-	}
-	return "none";
 }
