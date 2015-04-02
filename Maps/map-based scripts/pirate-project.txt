@@ -1,0 +1,420 @@
+
+List<playerInfo> players = new List<playerInfo>(8);
+Random Rnd = new Random();
+float deathDelay = 10000f;
+
+public class playerInfo{
+	// players infos
+	public IUser user = null;
+	public IPlayer player = null;
+	public PlayerTeam team = PlayerTeam.Independent;
+
+	// player's stats
+	public IObject goldInv = null;
+	public IObjectText textInfo = null;
+	public WeaponItem[] playerClass = {WeaponItem.NONE, WeaponItem.NONE, WeaponItem.NONE, WeaponItem.NONE, WeaponItem.NONE};
+	public IObject[] nuggets = {null, null, null, null, null, null};
+	public int goldStored = 0;
+	public int money = 10;
+	public float deathTime;
+	public bool gotAway = false;
+
+	// player's health situation
+	public float maxHealth = 0f;
+	public float health = 0f;
+	public float lastHealth = 100f;
+	public float lastDamage = 0f;
+	public int lifes = 1;
+	
+	public playerInfo(IUser User, IObject GoldInv, IObjectText TInfo, float maxHealth){
+		this.user = User;
+		this.player = User.GetPlayer();
+		this.team = player.GetTeam();
+		this.goldInv = GoldInv;
+		this.textInfo = TInfo;
+		this.maxHealth = maxHealth;
+		this.health = maxHealth;
+	}
+
+}
+
+int idNumber = 0;
+
+public void OnStartup(){
+	int BluobjectTextId = 0;
+	int RedobjectTextId = 0;
+	foreach(IUser usr in Game.GetActiveUsers()){
+		IObject HGoldInv = null;
+		IObjectText textInfo = null;
+		//usr.GetPlayer().SetTeam(PlayerTeam.Team2);
+		int rndNumber = Rnd.Next(1,3);
+		switch (rndNumber){
+			case 1: usr.GetPlayer().SetTeam(PlayerTeam.Team1); usr.GetPlayer().SetWorldPosition(GetObjectPos("Blu_Spawn"));break;
+
+			case 2: usr.GetPlayer().SetTeam(PlayerTeam.Team2); usr.GetPlayer().SetWorldPosition(GetObjectPos("Red_Spawn")); break;
+
+		}
+
+		if((usr.GetPlayer()).GetTeam() == PlayerTeam.Team1){
+			HGoldInv = (IObject)Game.GetSingleObjectByCustomId("BluH_" + BluobjectTextId.ToString());
+			textInfo = (IObjectText)Game.GetSingleObjectByCustomId("BluH" + BluobjectTextId.ToString());
+			BluobjectTextId ++;
+		}else{
+			HGoldInv = (IObject)Game.GetSingleObjectByCustomId("RedH_" + RedobjectTextId.ToString());
+			textInfo = (IObjectText)Game.GetSingleObjectByCustomId("RedH" + RedobjectTextId.ToString());
+			RedobjectTextId ++;
+		}
+		//usr.GetPlayer().SetInputEnabled(false);
+		players.Add(new playerInfo(usr, HGoldInv, textInfo, 200f));
+	}
+
+	foreach(IObject lamp in Game.GetObjectsByName("LightBulb00")){
+		if(idNumber<10)
+			lamp.CustomId = "LAMP_" + "0" + idNumber.ToString();
+		else
+			lamp.CustomId = "LAMP_" + idNumber.ToString();
+
+		idNumber++;
+	}
+
+}
+
+int ThrowTheGoldDelay = 5; 
+public void eachSec(TriggerArgs args){
+	CheckPoints();
+	SetplayerHealth();
+	if(ThrowTheGoldDelay == 0){ ThrowTheGold(); ThrowTheGoldDelay = 5;} else ThrowTheGoldDelay --;
+	HUB();
+}
+
+public void SetplayerHealth(){
+	for(int i = players.Count - 1; i >= 0; i --){
+		IPlayer player = players[i].player;
+		if(players[i].lastHealth != player.GetHealth()){
+			IPlayerStatistics pStatistics = player.Statistics;
+			players[i].lastDamage = pStatistics.TotalDamageTaken;
+			players[i].health -= players[i].lastHealth - player.GetHealth();
+			player.SetHealth((players[i].health*100)/players[i].maxHealth);
+			players[i].lastHealth = player.GetHealth();
+		}
+	}
+}
+
+public void CheckPoints(){
+	int total =0;
+	int bluGold = 0;
+	int redGold = 0;
+	foreach(IObject lamp in Game.GetObjectsByName("LightBulb00")){
+		lamp.SetHealth(100f); total ++;
+		if(lamp.GetWorldPosition().X < 0f){
+			bluGold++;
+		} else {
+			redGold++;
+		}
+	}
+	SetTheText("Placar", "total: " + total.ToString() +"\nBlu's gold: " + bluGold.ToString() + "\nRed's gold: " + redGold.ToString());
+}
+
+public void ThrowTheGold(){
+	for(int i = players.Count - 1; i>=0; i--){
+		if(players[i].player.IsCrouching && players[i].player.IsWalking){
+			for(int o = 5; o>=0; o--){
+				IObject lamp = players[i].nuggets[o];
+				if(lamp != null){
+					lamp.SetWorldPosition(players[i].player.GetWorldPosition() + new Vector2(players[i].player.FacingDirection * 8, 2f), true);
+					lamp.SetLinearVelocity(new Vector2(players[i].player.FacingDirection * 4, 3f), true);
+					players[i].nuggets[o] = null;
+					players[i].goldStored --;
+					break;
+				}
+			}
+		}
+	}
+}
+
+public void HUB(){
+	for(int i = players.Count - 1; i>=0; i--){
+		((IObjectText)players[i].textInfo).SetText(players[i].player.Name() + "'s life = " + players[i].health.ToString()); // info tab
+
+		if(players[i].player.IsCrouching && !players[i].player.IsWalking){ // throw the gold
+			if(Rnd.Next(500) < 10){
+				int nugget = Rnd.Next(5);
+				if(players[i].nuggets[nugget] != null){
+					IObject lamp = players[i].nuggets[nugget];
+					lamp.SetWorldPosition(players[i].player.GetWorldPosition() + new Vector2(players[i].player.FacingDirection * -10, 0f), true);
+					lamp.SetLinearVelocity(new Vector2(Rnd.Next(5), 0f), true);
+					players[i].nuggets[nugget] = null;
+					players[i].goldStored --;
+				}
+			}
+		}
+	}
+}
+
+public void GrabTheGold(TriggerArgs args){
+	IPlayer sender = (IPlayer)args.Sender;
+	IObject caller = (IObject)args.Caller;
+	for(int i = 0; i<players.Count; i++){
+		playerInfo pInfo = players[i];
+		IPlayer ply = pInfo.player;
+		if(ply == sender && !sender.IsDead){
+			if(pInfo.goldStored < pInfo.nuggets.Length){
+				players[i].nuggets[pInfo.goldStored] = caller;
+				caller.SetWorldPosition(pInfo.goldInv.GetWorldPosition(), true);
+				pInfo.goldStored++;
+			}
+			break;
+		}
+	}
+}
+
+public void OnPlayerDeath(TriggerArgs args){
+	dead = (IPlayer)args.Sender;
+	CreateTimer(1, 1, "AfterDeath", "afterThis");
+}
+
+IPlayer dead;
+public void AfterDeath(TriggerArgs args){
+	IPlayer sender = dead;
+	IPlayer player = null;
+	playerInfo PData = null;
+	int i = GetPlayerInfo(sender);
+		if(sender != null && !sender.IsRemoved){
+			if(players[i].player == sender){
+				PData = players[i];
+				player = PData.player;
+				IPlayerStatistics pStatistics = player.Statistics;
+				players[i].health += PData.lastDamage - pStatistics.TotalDamageTaken;
+				if(PData.health >= 0 && PData.player.GetWorldPosition().Y > Game.GetWorldBottom()){
+					players[i].player = SpawnUser(PData);
+					PData.player.SetHealth((PData.health*100)/PData.maxHealth);
+					foreach(WeaponItem wpn in players[i].playerClass){
+						players[i].player.GiveWeaponItem(wpn);
+					}
+					player.Remove();
+				}else{ int o = 0;
+					foreach(IObject lamp in players[i].nuggets){
+						if(lamp != null){
+							lamp.SetWorldPosition(players[i].player.GetWorldPosition() + new Vector2(Rnd.Next(5), Rnd.Next(5)), true);
+							lamp.SetLinearVelocity(new Vector2(Rnd.Next(5), Rnd.Next(5)), true);
+							players[i].nuggets[o] = null;
+							players[i].goldStored --;
+						} o ++;
+					}
+					if(players[i].lifes > 0){
+						players[i].deathTime = Game.TotalElapsedGameTime;
+						CreateTimer((int)deathDelay, 1, "Respawner", "respawner");
+						Game.WriteToConsole("Times");
+					}
+				}
+			}
+	}
+	((IObjectTimerTrigger)args.Caller).Remove();
+	dead = null;
+}
+
+IPlayer playerToRespawn;
+public void Respawner(TriggerArgs args){
+	float Time = 0f;
+	for(int i = players.Count - 1; i >= 0; i --){
+		if(players[i].deathTime < Time || Time == 0){
+			if(players[i].deathTime != 0){
+				playerToRespawn = players[i].player;
+				Time = players[i].deathTime;
+			}
+		}
+	}
+	int nmb = GetPlayerInfo(playerToRespawn);
+	if(playerToRespawn != null && players[nmb].player == playerToRespawn){
+		players[nmb].health = players[nmb].maxHealth;
+		IPlayer lastPly = players[nmb].player;
+		players[nmb].player = SpawnUser(players[nmb]);
+		if(players[nmb].player.GetTeam() == PlayerTeam.Team1){
+			players[nmb].player.SetWorldPosition(GetObjectPos("Blu_Spawn"));
+		}else
+			players[nmb].player.SetWorldPosition(GetObjectPos("Red_Spawn"));
+		lastPly.Remove();
+		players[nmb].deathTime = 0f;
+		players[nmb].lifes --;
+		playerToRespawn = null;
+	}
+	Game.WriteToConsole(Time.ToString());
+	((IObjectTimerTrigger)args.Caller).Remove();
+}
+
+public void away(TriggerArgs args){
+	IPlayer sender = (IPlayer)args.Sender;
+	int n = GetPlayerInfo(sender);
+	if(sender.GetTeam() == PlayerTeam.Team1){
+		sender.SetWorldPosition(GetObjectPos("Blu_Defense"));
+	}else
+		sender.SetWorldPosition(GetObjectPos("Red_Defense"));
+	players[n].gotAway = true;
+}
+
+//-Handy-//
+
+private IPlayer SpawnUser(playerInfo PData){
+	if (CheckUserStillActive(PData.player.GetUser())){
+		IPlayer newPlayer = Game.CreatePlayer(PData.player.GetWorldPosition()); // create a new blank player
+		newPlayer.SetUser(PData.player.GetUser()); // set user (this will make the user control the player instance)
+		newPlayer.SetProfile(PData.player.GetProfile()); // set user's profile
+		newPlayer.SetWorldPosition(PData.player.GetWorldPosition());
+		newPlayer.SetTeam(PData.team);
+		return newPlayer;
+	} else players.Remove(PData);
+	return null;
+}
+
+private bool CheckUserStillActive(IUser user){
+	foreach(IUser activeUser in Game.GetActiveUsers()){
+		if (activeUser.UserId == user.UserId) {
+			return true;
+		}
+	}
+	return false;
+}
+
+public void SetTheText(string obj, string message){
+	((IObjectText)Game.GetSingleObjectByCustomId(obj)).SetText(message);
+}
+
+public int GetPlayerInfo(IPlayer ply){
+	for(int i = players.Count -1; i>=0; i--){
+		if(ply == players[i].player){
+			return i;
+			break;
+		} else {
+			return 0;
+			break;
+		}
+	}
+	return 0;
+}
+
+public Vector2 GetObjectPos(string obj){
+	return ((IObject)Game.GetSingleObjectByCustomId(obj)).GetWorldPosition();
+}
+
+//-Money-//
+
+public void buy(TriggerArgs args){
+	IPlayer ply = (IPlayer)args.Sender; // sender
+	int nmb = GetPlayerInfo(ply);
+	switch (((IObject)args.Caller).CustomId)
+	{
+		//case "katana" : checkMoney(ply,6,WeaponItem.KATANA); break;
+		case "katana" :	 if(players[nmb].playerClass[0] != WeaponItem.KATANA)	if(checkMoney(ply,6)){
+						players[nmb].playerClass[0] = WeaponItem.KATANA;	ply.GiveWeaponItem(WeaponItem.KATANA);} break;
+
+		case "sniper" :	 if(players[nmb].playerClass[2] != WeaponItem.SNIPER)	if(checkMoney(ply,7) ){
+						players[nmb].playerClass[2] = WeaponItem.SNIPER;	ply.GiveWeaponItem(WeaponItem.SNIPER);} break;
+
+		case "pistol" :	 if(players[nmb].playerClass[1] != WeaponItem.PISTOL)	if(checkMoney(ply,2)){
+						players[nmb].playerClass[1] = WeaponItem.PISTOL;	ply.GiveWeaponItem(WeaponItem.PISTOL);} break;
+
+		case "SMG" :	 	 if(players[nmb].playerClass[2] != WeaponItem.TOMMYGUN)if(checkMoney(ply,6)){
+						players[nmb].playerClass[2] = WeaponItem.TOMMYGUN;	ply.GiveWeaponItem(WeaponItem.TOMMYGUN);} break;
+
+		case "machete" :	 if(players[nmb].playerClass[0] != WeaponItem.MACHETE)	if(checkMoney(ply,4)){
+						players[nmb].playerClass[0] = WeaponItem.MACHETE;	ply.GiveWeaponItem(WeaponItem.MACHETE);} break;
+
+		case "slow1" :	 if(players[nmb].playerClass[3] != WeaponItem.SLOWMO_5)if(checkMoney(ply,1)){
+						players[nmb].playerClass[3] = WeaponItem.SLOWMO_5;	ply.GiveWeaponItem(WeaponItem.SLOWMO_5);} break;
+
+		case "slow2" :	 if(players[nmb].playerClass[3] != WeaponItem.SLOWMO_10)if(checkMoney(ply,2)){
+						players[nmb].playerClass[3] = WeaponItem.SLOWMO_10;	ply.GiveWeaponItem(WeaponItem.SLOWMO_10);} break;
+
+		case "SO" :		 if(players[nmb].playerClass[2] != WeaponItem.SAWED_OFF)if(checkMoney(ply,4)){
+						players[nmb].playerClass[2] = WeaponItem.SAWED_OFF;	ply.GiveWeaponItem(WeaponItem.SAWED_OFF);} break;
+
+		case "wrench" :	 if(players[nmb].playerClass[0] != WeaponItem.PIPE)	if(checkMoney(ply,1)){
+						players[nmb].playerClass[0] = WeaponItem.PIPE;	ply.GiveWeaponItem(WeaponItem.PIPE);} break;
+
+		case "magnum" :	 if(players[nmb].playerClass[1] != WeaponItem.MAGNUM)	if(checkMoney(ply,5)){
+						players[nmb].playerClass[1] = WeaponItem.MAGNUM;	ply.GiveWeaponItem(WeaponItem.MAGNUM);} break;
+
+		case "reset" : {
+			ply.RemoveWeaponItemType(WeaponItemType.Melee);
+			ply.RemoveWeaponItemType(WeaponItemType.Handgun);
+			ply.RemoveWeaponItemType(WeaponItemType.Rifle);
+			ply.RemoveWeaponItemType(WeaponItemType.Thrown);
+			ply.RemoveWeaponItemType(WeaponItemType.Powerup);
+			players[nmb].money = 10;
+			for(int i = players[nmb].playerClass.Length - 1; i>=0; i--)
+				players[nmb].playerClass[i] = WeaponItem.NONE;
+			break;
+		}
+		default : break;
+	}
+}
+
+public bool checkMoney(IPlayer ply, int mon){
+	int nmb = GetPlayerInfo(ply);
+	if (players[nmb].money >= mon){
+		(players[nmb]).money -= mon;
+		return true;
+		//ply.GiveWeaponItem(wpn);
+	}
+	else{ Game.ShowPopupMessage(ply.Name() + " is poor."); Game.PlaySound("MenuCancel", new Vector2(0, 0), 0f); return false;}
+}
+
+public void CreateTimer(int interval, int count, string method, string id) {
+	IObjectTimerTrigger timerTrigger = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+	timerTrigger.SetIntervalTime(interval);
+	timerTrigger.SetRepeatCount(count);
+	timerTrigger.SetScriptMethod(method);
+	timerTrigger.CustomId = id;
+	timerTrigger.Trigger();
+}
+
+//-nevermind-//
+
+public void Move(TriggerArgs args){
+
+	if(args.Sender is IPlayer){
+		IPlayer sender = (IPlayer)args.Sender;
+		IObject caller = (IObject)args.Caller;
+
+		if(caller.CustomId == "Move_Right"){
+			sender.SetWorldPosition(new Vector2((Game.GetSingleObjectByCustomId("Move_Left")).GetWorldPosition().X + 10f, sender.GetWorldPosition().Y));
+		}
+
+		if(caller.CustomId == "Move_Left"){
+			sender.SetWorldPosition(new Vector2((Game.GetSingleObjectByCustomId("Move_Right")).GetWorldPosition().X - 10f, sender.GetWorldPosition().Y));
+		}
+
+		if(caller.CustomId == "Move_Top"){
+			sender.SetWorldPosition(new Vector2(sender.GetWorldPosition().X, (Game.GetSingleObjectByCustomId("Move_Bottom")).GetWorldPosition().Y + 20f));
+		}
+
+		if(caller.CustomId == "Move_Bottom"){
+			sender.SetWorldPosition(new Vector2(sender.GetWorldPosition().X, (Game.GetSingleObjectByCustomId("Move_Top")).GetWorldPosition().Y - 20f));
+		}
+	}
+
+	if(args.Sender is IObject){
+		IObject sender = (IObject)args.Sender;
+		IObject caller = (IObject)args.Caller;
+
+		if(sender.CustomId != "doNothing"){
+
+			if(caller.CustomId == "Move_Right"){
+				sender.SetWorldPosition(new Vector2((Game.GetSingleObjectByCustomId("Move_Left")).GetWorldPosition().X + 15f, sender.GetWorldPosition().Y), true);
+			}
+
+			if(caller.CustomId == "Move_Left"){
+				sender.SetWorldPosition(new Vector2((Game.GetSingleObjectByCustomId("Move_Right")).GetWorldPosition().X - 15f, sender.GetWorldPosition().Y), true);
+			}
+
+			if(caller.CustomId == "Move_Top"){
+				sender.SetWorldPosition(new Vector2(sender.GetWorldPosition().X, (Game.GetSingleObjectByCustomId("Move_Bottom")).GetWorldPosition().Y + 15f), true);
+			}
+
+			if(caller.CustomId == "Move_Bottom"){
+				sender.SetWorldPosition(new Vector2(sender.GetWorldPosition().X, (Game.GetSingleObjectByCustomId("Move_Top")).GetWorldPosition().Y - 15f), true);
+			}
+		}
+	}
+}
+
