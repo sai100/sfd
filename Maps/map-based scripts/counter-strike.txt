@@ -15,7 +15,7 @@ Random rndNum = new Random();
 
 bool waveOK = false;
 
-string t = " 's money : ";
+string t = "\n money : ";
 
 int bluteam = 0;
 int redteam = 0;
@@ -128,6 +128,19 @@ public void respCheck(){
 			if(inf.time < 5) inf.time++;
 			else temp.Add(inf);
 		}
+		//disconnection
+		if(inf.user == null) {
+			inf.usT.SetText(inf.corpse.GetProfile().Name + "\n rage quit");
+			if(inf.team == PlayerTeam.Team1){
+				inf.usT.CustomId = "BLUT";
+				bluteam --;
+			}
+			else {
+				inf.usT.CustomId = "REDT";
+				redteam--;
+			}
+			spawned.Remove(inf.user);
+		}
 	}
 	foreach (Infos inf in temp) resp(inf);
 }
@@ -187,15 +200,21 @@ public void OnPlayerDeath(TriggerArgs args){
 	if(ply.GetUser() != null && checkUser (ply.GetUser() , spawned) && ply.GetUser().Name != "") {
 		infPly.IsDead = true;
 		infPly.usT.SetTextColor(doom);
-		infPly.usT.SetText(ply.Name() + " is dead.");
+		infPly.usT.SetText(ply.Name() + "\n is dead.");
 	}
 	else if (infPly != null){
 		//disconnection
 		players.Remove(GetPlayerInfo(ply));
 		infPly.usT.SetTextColor(doom);
-		infPly.usT.SetText(ply.GetProfile().Name + " rage quit");
-		if(infPly.team == PlayerTeam.Team1)infPly.usT.CustomId = "BLUT";
-		else infPly.usT.CustomId = "REDT";
+		infPly.usT.SetText(ply.GetProfile().Name + "\n rage quit");
+		if(infPly.team == PlayerTeam.Team1){
+			infPly.usT.CustomId = "BLUT";
+			bluteam --;
+		}
+		else {
+			infPly.usT.CustomId = "REDT";
+			redteam--;
+		}
 		spawned.Remove(user);
 	}
 	redteamInGame.Remove(ply);
@@ -280,7 +299,7 @@ private void away(Infos plyInf){
 		for (int i = 10; i !=0; i--){
 			ply.SetWorldPosition(((IObject)Game.GetSingleObjectByCustomId("bluenter")).GetWorldPosition());
 		}
-		plyInf.usT.SetText(ply.Name() + " is alive");
+		plyInf.usT.SetText(ply.Name() + "\n is alive");
 		plyInf.usT.SetTextColor(NAVY);
 		bluteamInGame.Add(ply);
 	}
@@ -288,7 +307,7 @@ private void away(Infos plyInf){
 		for (int i = 10; i !=0; i--){
 			ply.SetWorldPosition(((IObject)Game.GetSingleObjectByCustomId("redenter")).GetWorldPosition());
 		}
-		plyInf.usT.SetText(ply.Name() + " is alive");
+		plyInf.usT.SetText(ply.Name() + "\n is alive");
 		plyInf.usT.SetTextColor(RED);
 		redteamInGame.Add(ply);
 	}
