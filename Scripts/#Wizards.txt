@@ -15,17 +15,16 @@ private const bool TIME_LIMIT_ACTIVATED = true;		    			// set to "true" to remo
 private const int TIME_LIMIT_SECONDS = 90;			    		// choose the amount of time given to players to finish the round
 private const string TIME_LIMIT_MODE = "auto";			    		// set to "main": start timer at beginning; "auto": when 2 teams or 2 players left
 //=========================<commentator>============================//
-private const string [] ONDEATH_TEXT = {
-	{0} + " : Fly you fools !",
-	{0} + " failed a saving throw.",
-	{0} + " wasen't my serf anyway.",
+private string [] ONDEATH_TEXT = new string []{
+	"{0} : Fly you fools !",
+	"{0} failed a saving throw.",
+	"{0} wasen't my serf anyway.",
 	"Avada kedavra !",
-	"Hey, " + {0} + " needs a necromancer !",
-	{0} + " isn't dead, he is figthing a balrog.",
-	{0} + " is out of mana. Forever."
-}
+	"Hey, {0} needs a necromancer !",
+	"{0} isn't dead, he is figthing a balrog.",
+	"{0} is out of mana. Forever."};
 
-private const string [] ONSTART_TEXT = {
+private string [] ONSTART_TEXT = new string []{
 	"Let there be figth !",
 	"This isn't the magic you're looking for.",
 	"Migth and Magic !", 
@@ -35,8 +34,7 @@ private const string [] ONSTART_TEXT = {
 	"It's like a charm",
 	"(Battleground)spell. It cast a spell to battleground",
 	"HADOUKEN ! Uhh, wrong game.",
-	"What kind of sorcery is this ?"
-}
+	"What kind of sorcery is this ?"};
 //==================================================================//
 //=================< DO NOT TOUCH ANYTHING IN BELOW >===============//
 //==============< IF YOU'RE NOT SURE WHAT YOU'RE DOING >============//
