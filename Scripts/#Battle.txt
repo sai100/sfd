@@ -341,6 +341,7 @@ public void Tick_Revive(){
 					
 				if (REVIVE_FINISH_PLAYERS && damage > players[i].DeathDamageTaken + (float)REVIVE_FINISH_HEALTH){
 					diedNow = true;
+					if (players[i].Label != null) players[i].Label.Remove();
 					players.RemoveAt(i);
 				}
 
@@ -403,7 +404,7 @@ public void Tick_Revive(){
 				}
 			// if player's body is removed, gibbed or time has run out, remove entry from list
 			} else {
-				players[i].Label.Remove();
+				if (players[i].Label != null) players[i].Label.Remove();
 				players.RemoveAt(i);
 			}
 		}
@@ -471,8 +472,10 @@ public void Prepare_CustomDamage(){
 public void Tick_Hardcore_Main(){
 	for(int i = players.Count - 1; i >=0; i--){
 		PlayerData data = players[i];
-		if (data.Body.IsRemoved) players.RemoveAt(i);
-		else {
+		if (data.Body.IsRemoved) {
+			if (players[i].Label != null) players[i].Label.Remove();
+			players.RemoveAt(i);
+		} else {
 			IPlayerStatistics stats = data.Body.Statistics;
 			float damage =
 				stats.TotalFallDamageTaken * HC_FALL_MULTIPLIER +
@@ -633,6 +636,7 @@ public void Tick_ExplodeOnDeath(){
 			PlayerData data = players[i];
 			if (data.Body.IsDead && !data.Body.IsRemoved && Game.TotalElapsedGameTime - data.DeathTime > (float)EXPLODE_ON_DEATH_DELAY){
 				Game.TriggerExplosion(data.Body.GetWorldPosition());
+				if (players[i].Label != null) players[i].Label.Remove();
 				players.RemoveAt(i);
 			}
 		}
