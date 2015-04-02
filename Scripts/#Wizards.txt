@@ -34,6 +34,7 @@ public class PlayerData {
 	public int SpellId = 0;
 	public int BookId = 0;
 
+	public float DeathTime = 0f;
 	public float NextUseTime = 0f;
 	public float LastUseTime = 0f;
 	public float LastPushedTime = 0f;
@@ -76,23 +77,6 @@ public class PlayerData {
 	public PlayerData(){}
 }
 
-// used to revive players
-private class DeadPlayerData {
-	public float DeathTime = 0f;
-	public IUser User = null;
-	public IPlayer Body = null;
-	public PlayerTeam Team = PlayerTeam.Independent;
-
-	public DeadPlayerData(float deathTime, IUser user, IPlayer body, PlayerTeam team){
-		this.DeathTime = deathTime;
-		this.User = user;
-		this.Body = body;
-		this.Team = team;
-	}
-
-	public DeadPlayerData(){}
-}
-
 // used to remove spawned tiles and objects
 private class ProjData {
 	public IObject ProjObject = null;
@@ -120,7 +104,6 @@ private class ProjData {
 Random rand = new Random();
 
 private List<PlayerData> players = new List<PlayerData>();
-private List<DeadPlayerData> deadPlayers = new List<DeadPlayerData>();
 private List<ProjData> projs = new List<ProjData>();
 
 // time limit vars
@@ -175,15 +158,15 @@ public void PrepareStartSpells(){
 public void Death(TriggerArgs args){
 	IPlayer ply = (IPlayer)args.Sender;
 	// remove player's player data
-	for(int i = players.Count - 1; i >=0; i--){
-		PlayerData data = players[i];
-		if (data.Player == ply){
-			if (data.Label != null) data.Label.Remove();
-			players.RemoveAt(i);
+	if (ply.IsRemoved){
+		for(int i = players.Count - 1; i >=0; i--){
+			PlayerData data = players[i];
+			if (data.Player == ply){
+				if (data.Label != null) data.Label.Remove();
+				players.RemoveAt(i);
+			}
 		}
 	}
-	// add player's dead player data
-	if (!ply.IsRemoved) deadPlayers.Add(new DeadPlayerData(Game.TotalElapsedGameTime, ply.GetUser(), ply, ply.GetTeam()));
 }
 
 public void FastTick(TriggerArgs args){
@@ -215,8 +198,8 @@ public void Tick_PopupMessage(){
 }
 
 public void Tick_DeadPlayers(){
-	for(int i = deadPlayers.Count - 1; i >=0; i--){
-		if (deadPlayers[i].Body.IsRemoved) deadPlayers.RemoveAt(i);
+	for(int i = players.Count - 1; i >=0; i--){
+		if (players[i].Player.IsRemoved) players.RemoveAt(i);
 	}
 }
 
@@ -227,11 +210,11 @@ public void Tick_Display(){
 		IPlayer ply = data.Player;
 		int mana = data.Mana;
 
-		if (mana != 100 && data.Label == null){
+		if (!data.Player.IsDead && mana != 100 && data.Label == null){
 			IObjectText labelNew = (IObjectText)Game.CreateObject("Text", Vector2.Zero, 0f);
 			labelNew.SetTextColor(GetTeamColor(ply.GetTeam()));
 			data.Label = labelNew;
-		} else if (mana == 100 && data.Label != null){
+		} else if ((mana == 100 || data.Player.IsDead) && data.Label != null){
 			data.Label.Remove();
 			data.Label = null;
 		}
@@ -724,8 +707,8 @@ PlayerTeam reviveTeam = PlayerTeam.Independent;
 public void SpellTrigger_Revive(TriggerArgs args){
 	if (args.Sender is IPlayer){
 	IPlayer ply = (IPlayer)args.Sender;
-		if (ply.IsDead && GetDeadPlayerData(ply).Body != null){
-			DeadPlayerData data = GetDeadPlayerData(ply);
+		if (ply.IsDead && GetPlayerData(ply).Player != null){
+			PlayerData data = GetPlayerData(ply);
 			float health = (float)rand.Next(15,50);
 
 			IPlayer revivedPlayer = Game.CreatePlayer(ply.GetWorldPosition());
@@ -733,11 +716,11 @@ public void SpellTrigger_Revive(TriggerArgs args){
 			revivedPlayer.SetProfile(data.User.GetProfile());
 			revivedPlayer.SetHealth(health);
 			revivedPlayer.SetTeam(reviveTeam);
-			data.Body.Remove();
+			data.Player.Remove();
+			data.Player = revivedPlayer;
 
-			players.Add(new PlayerData(revivedPlayer.GetUser(), revivedPlayer, 0));
-			GiveBasicSpells(GetPlayerData(revivedPlayer));
 			GetPlayerData(revivedPlayer).StartHealth = health;
+			GetPlayerData(revivedPlayer).Player = revivedPlayer;
 
 			Game.PlayEffect("PWT", revivedPlayer.GetWorldPosition(), "REVIVE!");
 			Game.PlayEffect("Electric", revivedPlayer.GetWorldPosition());
@@ -752,18 +735,11 @@ public void SpellTrigger_Revive(TriggerArgs args){
 //==================================================================//
 
 // get player data by IPlayer
-public PlayerData GetPlayerData(IPlayer ply){
+private PlayerData GetPlayerData(IPlayer ply){
 	for(int i = players.Count - 1; i >=0; i--){
 		if (players[i].Player == ply) return players[i];
 	}
 	return new PlayerData(); 
-}
-
-private DeadPlayerData GetDeadPlayerData(IPlayer ply){
-	for(int i = deadPlayers.Count - 1; i >=0; i--){
-		if (deadPlayers[i].Body == ply) return deadPlayers[i];
-	}
-	return new DeadPlayerData(); 
 }
 
 // create timer trigger
