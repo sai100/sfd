@@ -15,7 +15,7 @@ Random rndNum = new Random();
 
 bool waveOK = false;
 
-string t = "\n money : ";
+string t = " money: ";
 
 int bluteam = 0;
 int redteam = 0;
@@ -129,8 +129,8 @@ public void respCheck(){
 			else temp.Add(inf);
 		}
 		//disconnection
-		if(inf.user == null) {
-			inf.usT.SetText(inf.corpse.GetProfile().Name + "\n rage quit");
+		if(inf.user == null || !checkUser(inf.user, spawned)) {
+			inf.usT.SetText(inf.corpse.GetProfile().Name + " rage quit");
 			if(inf.team == PlayerTeam.Team1){
 				inf.usT.CustomId = "BLUT";
 				bluteam --;
@@ -147,7 +147,7 @@ public void respCheck(){
 
 public void usersCheck(){
 	foreach(IUser user in Game.GetActiveUsers()){
-		if (checkUser(user, spawned) == false) {
+		if (!checkUser(user, spawned)) {
 			spawned.Add(user);
 			Infos plyInf = new Infos( PlayerTeam.Independent,5, user, null, true);
 			if(redteam>bluteam){
@@ -200,13 +200,13 @@ public void OnPlayerDeath(TriggerArgs args){
 	if(ply.GetUser() != null && checkUser (ply.GetUser() , spawned) && ply.GetUser().Name != "") {
 		infPly.IsDead = true;
 		infPly.usT.SetTextColor(doom);
-		infPly.usT.SetText(ply.Name() + "\n is dead.");
+		infPly.usT.SetText(ply.Name() + " is dead.");
 	}
 	else if (infPly != null){
 		//disconnection
 		players.Remove(GetPlayerInfo(ply));
 		infPly.usT.SetTextColor(doom);
-		infPly.usT.SetText(ply.GetProfile().Name + "\n rage quit");
+		infPly.usT.SetText(ply.GetProfile().Name + " rage quit");
 		if(infPly.team == PlayerTeam.Team1){
 			infPly.usT.CustomId = "BLUT";
 			bluteam --;
