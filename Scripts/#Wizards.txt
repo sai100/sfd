@@ -1,6 +1,6 @@
 //==================================================================//
 //============<    #WIZARDS GAMEMODE BY #OCTOTHORP    >=============//
-//============<                 v0.1.1                >=============//
+//============<                 v0.1.2                >=============//
 //==================================================================//
 //=====================< #WIZARDS - settings >======================//
 //============================<general>=============================//
@@ -212,7 +212,7 @@ public void OnStartup(){
 		if(HOSTING_ACTIVATED) Game.GetPlayers()[0].Remove();
 
 		// some messages
-		ModMessage("v0.1.1 (beta)");
+		ModMessage("v0.1.2 (beta)");
 		if (HOSTING_ACTIVATED) ModMessage("Host is AFK");
 		Game.ShowPopupMessage("Controls:\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=WALKING] + [KEY=BLOCK_AIM] - change spellbook\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=BLOCK_AIM] - change spell\n[KEY=ATTACK] - use spell\n", new Color(220,50,50));
 	} else {
