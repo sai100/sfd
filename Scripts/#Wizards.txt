@@ -981,7 +981,7 @@ public void GiveBasicSpells(PlayerData data){
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 		temp.Add(new PlayerData.BookData.SpellData("Grab", 25, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Shield", 75, 20000f));
-		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 1, 1000f));
+		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 125, 60000f));
 
 		data.Books.Add(new PlayerData.BookData("Mysticism", temp));
 	}
