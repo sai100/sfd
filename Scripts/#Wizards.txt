@@ -16,7 +16,26 @@ private const string TIME_LIMIT_MODE = "auto";			    		// set to "main": start t
 //===========================<utilites>=============================//
 private bool HOSTING_ACTIVATED = false;								// set to true to kill host at the beginning of each round.
 //=========================<commentator>============================//
-// some rpg commentaries made by Gwen. I would do some too.
+private string [] ONDEATH_TEXT = new string []{
+	"{0} : Fly you fools !",
+	"{0} failed a saving throw.",
+	"{0} wasen't my serf anyway.",
+	"Avada kedavra !",
+	"Hey, {0} needs a necromancer !",
+	"{0} isn't dead, he is figthing a balrog.",
+	"{0} is out of mana. Forever."};
+
+private string [] ONSTART_TEXT = new string []{
+	"Let there be figth !",
+	"This isn't the magic you're looking for.",
+	"Migth and Magic !", 
+	"Have you heard about Gwandalf the pilgrim ?",
+	"Don't SPELL it wrong ! Get it ?",
+	"Pro tip : use suicide spell NOW !", 
+	"It's like a charm",
+	"(Battleground)spell. It cast a spell to battleground",
+	"HADOUKEN ! Uhh, wrong game.",
+	"What kind of sorcery is this ?"};
 //==================================================================//
 //=================< DO NOT TOUCH ANYTHING IN BELOW >===============//
 //==============< IF YOU'RE NOT SURE WHAT YOU'RE DOING >============//
