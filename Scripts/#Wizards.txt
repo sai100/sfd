@@ -687,7 +687,6 @@ public void SpellUsed(PlayerData data){
 				projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 100f, false));
 			}
 			Game.PlayEffect("CAM_S", Vector2.Zero, 1f, 500f, true);
-			Game.PlaySound("Wilhelm", ply.GetWorldPosition(), 75f);
 		}
 		break;
 	case "To The Moon!":
@@ -725,6 +724,7 @@ public void SpellUsed(PlayerData data){
 	case "SUICIDE":
 		for (int i = 0; i < 5; i++) Game.TriggerExplosion(ply.GetWorldPosition() + new Vector2(rand.Next(-40, 40), rand.Next(-40, 40)));
 		ply.Gib();
+		Game.PlaySound("Wilhelm", ply.GetWorldPosition(), 75f);
 		break;
 	/*case "BALLOONS!":
 		for (int i = 0; i < 3; i++){
@@ -916,7 +916,7 @@ public void Tick_MindControl(){
 					contData.StartHealth = contData.LastHealth;
 					controller.SetUser(contData.User);
 					controller.SetProfile(contData.User.GetProfile());
-					controller.SetTeam(contData.Player.GetTeam());
+					controller.SetTeam(MindData.Team);
 					players.Add(contData);
 				} else {
 					controller.Kill();
