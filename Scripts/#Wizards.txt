@@ -126,13 +126,15 @@ private class MindControlData {
 	public PlayerData ControllerData = new PlayerData();
 	public float EndTime = 0f;
 	public float ControllerHealth = 50f;
+	public PlayerTeam Team = PlayerTeam.Team1;
 
-	public MindControlData (IPlayer ply, IUser user, PlayerData contr, float endTime, float health){
+	public MindControlData (IPlayer ply, IUser user, PlayerData contr, float endTime, float health, PlayerTeam team){
 		this.Player = ply;
 		this.User = user;
 		this.ControllerData = contr;
 		this.EndTime = endTime;
 		this.ControllerHealth = health;
+		this.Team = team;
 	}
 }
 
@@ -614,6 +616,7 @@ public void SpellUsed(PlayerData data){
 		m_reviveTeam = ply.GetTeam();
 		break;
 	case "Mind Control":
+		m_mindController = data;
 		for (int i = 0; i <= 4; i++){
 			IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
 				"AreaTrigger",
@@ -624,7 +627,6 @@ public void SpellUsed(PlayerData data){
 			areaTrigger.SetScriptMethod("SpellTrigger_MindControl");
 			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 250f, false));
 		}
-		m_mindController = data;
 		break;
 	case "Defender":
 		PlayerTeam defendingTeam = ply.GetTeam();
@@ -869,8 +871,8 @@ public void SpellTrigger_MindControl(TriggerArgs args){
 		IPlayer body = (IPlayer)args.Sender;
 		if (!body.IsDead && Game.TotalElapsedGameTime > m_nextMindControl){
 			foreach (IObject obj in Game.GetObjectsByCustomId("MindControlTrigger")) obj.Remove();
-
-			controlledPlayers.Add(new MindControlData(body, body.GetUser(), m_mindController, Game.TotalElapsedGameTime + 7000f, m_mindController.Player.GetHealth()));
+			if (m_mindController.Player.GetTeam() != PlayerTeam.Independent)Game.ShowPopupMessage("This is SPARTA");
+			controlledPlayers.Add(new MindControlData(body, body.GetUser(), m_mindController, Game.TotalElapsedGameTime + 7000f, m_mindController.Player.GetHealth(), m_mindController.Player.GetTeam()));
 
 			Game.PlayEffect("Electric", body.GetWorldPosition() + new Vector2(0, 8f));
 			Game.PlayEffect("Electric", m_mindController.Player.GetWorldPosition() + new Vector2(0, 8f));
@@ -914,6 +916,7 @@ public void Tick_MindControl(){
 					contData.StartHealth = contData.LastHealth;
 					controller.SetUser(contData.User);
 					controller.SetProfile(contData.User.GetProfile());
+					controller.SetTeam(contData.Player.GetTeam());
 					players.Add(contData);
 				} else {
 					controller.Kill();
