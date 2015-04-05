@@ -125,12 +125,14 @@ private class MindControlData {
 	public IUser User = null;
 	public PlayerData ControllerData = new PlayerData();
 	public float EndTime = 0f;
+	public float ControllerHealth = 50f;
 
-	public MindControlData (IPlayer ply, IUser user, PlayerData contr, float endTime){
+	public MindControlData (IPlayer ply, IUser user, PlayerData contr, float endTime, float health){
 		this.Player = ply;
 		this.User = user;
 		this.ControllerData = contr;
 		this.EndTime = endTime;
+		this.ControllerHealth = health;
 	}
 }
 
@@ -655,7 +657,7 @@ public void SpellUsed(PlayerData data){
 			projs.Add(new ProjData(piece, Game.TotalElapsedGameTime + lifetime, false, Game.TotalElapsedGameTime + delay)); }
 		}
 		break;
-	case "Freeze":
+	case "Mind Lock":
 		{
 			for (int i = 0; i <= 4; i++){
 				IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
@@ -663,7 +665,7 @@ public void SpellUsed(PlayerData data){
 					ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 50 + ((i-1)*8), 2f),
 					0
 				));
-				areaTrigger.SetScriptMethod("SpellTrigger_Freeze");
+				areaTrigger.SetScriptMethod("SpellTrigger_Mind_Lock");
 				projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 250f, false));
 			}
 		}
@@ -683,6 +685,7 @@ public void SpellUsed(PlayerData data){
 				projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 100f, false));
 			}
 			Game.PlayEffect("CAM_S", Vector2.Zero, 1f, 500f, true);
+			Game.PlaySound("Whilhelm", ply.GetWorldPosition(), 75f);
 		}
 		break;
 	case "To The Moon!":
@@ -743,7 +746,7 @@ public void SpellUsed(PlayerData data){
 // | these methods are used by spells
 // | which create temporary triggers
 // V
-public void SpellTrigger_Freeze(TriggerArgs args){
+public void SpellTrigger_Mind_Lock(TriggerArgs args){
 	if (args.Sender is IPlayer){
 		IPlayer ply = (IPlayer)args.Sender;
 		if (ply.GetUser() != null){
@@ -867,7 +870,7 @@ public void SpellTrigger_MindControl(TriggerArgs args){
 		if (!body.IsDead && Game.TotalElapsedGameTime > m_nextMindControl){
 			foreach (IObject obj in Game.GetObjectsByCustomId("MindControlTrigger")) obj.Remove();
 
-			controlledPlayers.Add(new MindControlData(body, body.GetUser(), m_mindController, Game.TotalElapsedGameTime + 7000f));
+			controlledPlayers.Add(new MindControlData(body, body.GetUser(), m_mindController, Game.TotalElapsedGameTime + 7000f, m_mindController.Player.GetHealth()));
 
 			Game.PlayEffect("Electric", body.GetWorldPosition() + new Vector2(0, 8f));
 			Game.PlayEffect("Electric", m_mindController.Player.GetWorldPosition() + new Vector2(0, 8f));
@@ -884,6 +887,7 @@ public void SpellTrigger_MindControl(TriggerArgs args){
 
 public void Tick_MindControl(){
 	for(int i = controlledPlayers.Count - 1; i >=0; i--){
+		MindControlData MindData = controlledPlayers[i];
 		PlayerData contData = controlledPlayers[i].ControllerData;
 		IPlayer victPlayer = controlledPlayers[i].Player;
 		IUser victUser = controlledPlayers[i].User;
@@ -902,10 +906,11 @@ public void Tick_MindControl(){
 			// if player is not dead, make controller "exit"
 			if (!victPlayer.IsDead){
 				IPlayer controller = Game.CreatePlayer(victPlayer.GetWorldPosition() + new Vector2(victPlayer.FacingDirection * 24f, 0));
-				controller.SetHealth(contData.LastHealth);
+				controller.SetHealth(MindData.ControllerHealth);
 				if (contData.User != null){
 					Game.PlayEffect("Electric", controller.GetWorldPosition() + new Vector2(0, 8f));
 					contData.Player = controller;
+					contData.LastHealth = MindData.ControllerHealth;
 					contData.StartHealth = contData.LastHealth;
 					controller.SetUser(contData.User);
 					controller.SetProfile(contData.User.GetProfile());
@@ -992,7 +997,7 @@ public void GiveBasicSpells(PlayerData data){
 		temp.Add(new PlayerData.BookData.SpellData("FUS RO DAH", 75, 15000));
 		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 65, 8000f));
 		temp.Add(new PlayerData.BookData.SpellData("SuperJump", 30, 1000f));
-		temp.Add(new PlayerData.BookData.SpellData("Freeze", 100, 40000f));
+		temp.Add(new PlayerData.BookData.SpellData("Mind Lock", 100, 40000f));
 
 		data.Books.Add(new PlayerData.BookData("Alteration", temp));
 	}
@@ -1000,7 +1005,7 @@ public void GiveBasicSpells(PlayerData data){
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 		temp.Add(new PlayerData.BookData.SpellData("Grab", 25, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Shield", 75, 20000f));
-		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 125, 60000f));
+		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 125, 6000f));
 
 		data.Books.Add(new PlayerData.BookData("Mysticism", temp));
 	}
