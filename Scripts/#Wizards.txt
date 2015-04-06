@@ -66,6 +66,8 @@ public class PlayerData {
 	public float LastHealth = 100f;
 	public IObjectText Label = null;
 
+	public PlayerTeam Team = PlayerTeam.Independent;
+
 	public List<BookData> Books = new List<BookData>();
 	public class BookData {
 		public string Name = "unnamed";
@@ -93,6 +95,7 @@ public class PlayerData {
 		this.User = user;
 		this.Player = ply;
 		this.Mana = mana;
+		this.Team = this.Player.GetTeam();
 	}
 
 	public PlayerData (){}
@@ -126,15 +129,13 @@ private class MindControlData {
 	public PlayerData ControllerData = new PlayerData();
 	public float EndTime = 0f;
 	public float ControllerHealth = 50f;
-	public PlayerTeam Team = PlayerTeam.Team1;
 
-	public MindControlData (IPlayer ply, IUser user, PlayerData contr, float endTime, float health, PlayerTeam team){
+	public MindControlData (IPlayer ply, IUser user, PlayerData contr, float endTime, float health){
 		this.Player = ply;
 		this.User = user;
 		this.ControllerData = contr;
 		this.EndTime = endTime;
 		this.ControllerHealth = health;
-		this.Team = team;
 	}
 }
 
@@ -872,7 +873,7 @@ public void SpellTrigger_MindControl(TriggerArgs args){
 		if (!body.IsDead && Game.TotalElapsedGameTime > m_nextMindControl){
 			foreach (IObject obj in Game.GetObjectsByCustomId("MindControlTrigger")) obj.Remove();
 			if (m_mindController.Player.GetTeam() != PlayerTeam.Independent)Game.ShowPopupMessage("This is SPARTA");
-			controlledPlayers.Add(new MindControlData(body, body.GetUser(), m_mindController, Game.TotalElapsedGameTime + 7000f, m_mindController.Player.GetHealth(), m_mindController.Player.GetTeam()));
+			controlledPlayers.Add(new MindControlData(body, body.GetUser(), m_mindController, Game.TotalElapsedGameTime + 7000f, m_mindController.Player.GetHealth()));
 
 			Game.PlayEffect("Electric", body.GetWorldPosition() + new Vector2(0, 8f));
 			Game.PlayEffect("Electric", m_mindController.Player.GetWorldPosition() + new Vector2(0, 8f));
@@ -916,7 +917,7 @@ public void Tick_MindControl(){
 					contData.StartHealth = contData.LastHealth;
 					controller.SetUser(contData.User);
 					controller.SetProfile(contData.User.GetProfile());
-					controller.SetTeam(MindData.Team);
+					controller.SetTeam(contData.Team);
 					players.Add(contData);
 				} else {
 					controller.Kill();
