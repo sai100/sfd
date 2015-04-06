@@ -66,6 +66,8 @@ public class PlayerData {
 	public float LastHealth = 100f;
 	public IObjectText Label = null;
 
+	public PlayerTeam Team = PlayerTeam.Independent;
+
 	public List<BookData> Books = new List<BookData>();
 	public class BookData {
 		public string Name = "unnamed";
@@ -93,6 +95,7 @@ public class PlayerData {
 		this.User = user;
 		this.Player = ply;
 		this.Mana = mana;
+		this.Team = ply.GetTeam();
 	}
 
 	public PlayerData (){}
@@ -125,12 +128,14 @@ private class MindControlData {
 	public IUser User = null;
 	public PlayerData ControllerData = new PlayerData();
 	public float EndTime = 0f;
+	public float ControllerHealth = 50f;
 
-	public MindControlData (IPlayer ply, IUser user, PlayerData contr, float endTime){
+	public MindControlData (IPlayer ply, IUser user, PlayerData contr, float endTime, float health){
 		this.Player = ply;
 		this.User = user;
 		this.ControllerData = contr;
 		this.EndTime = endTime;
+		this.ControllerHealth = health;
 	}
 }
 
@@ -252,6 +257,7 @@ public void Death(TriggerArgs args){
 			}
 		}
 	}
+	CheckGameover();
 }
 
 public void FastTick(TriggerArgs args){
@@ -612,6 +618,7 @@ public void SpellUsed(PlayerData data){
 		m_reviveTeam = ply.GetTeam();
 		break;
 	case "Mind Control":
+		m_mindController = data;
 		for (int i = 0; i <= 4; i++){
 			IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
 				"AreaTrigger",
@@ -622,7 +629,6 @@ public void SpellUsed(PlayerData data){
 			areaTrigger.SetScriptMethod("SpellTrigger_MindControl");
 			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 250f, false));
 		}
-		m_mindController = data;
 		break;
 	case "Defender":
 		PlayerTeam defendingTeam = ply.GetTeam();
@@ -655,7 +661,7 @@ public void SpellUsed(PlayerData data){
 			projs.Add(new ProjData(piece, Game.TotalElapsedGameTime + lifetime, false, Game.TotalElapsedGameTime + delay)); }
 		}
 		break;
-	case "Freeze":
+	case "Mind Lock":
 		{
 			for (int i = 0; i <= 4; i++){
 				IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
@@ -663,7 +669,7 @@ public void SpellUsed(PlayerData data){
 					ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 50 + ((i-1)*8), 2f),
 					0
 				));
-				areaTrigger.SetScriptMethod("SpellTrigger_Freeze");
+				areaTrigger.SetScriptMethod("SpellTrigger_Mind_Lock");
 				projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 250f, false));
 			}
 		}
@@ -720,6 +726,7 @@ public void SpellUsed(PlayerData data){
 	case "SUICIDE":
 		for (int i = 0; i < 5; i++) Game.TriggerExplosion(ply.GetWorldPosition() + new Vector2(rand.Next(-40, 40), rand.Next(-40, 40)));
 		ply.Gib();
+		Game.PlaySound("Wilhelm", ply.GetWorldPosition(), 75f);
 		break;
 	/*case "BALLOONS!":
 		for (int i = 0; i < 3; i++){
@@ -743,7 +750,7 @@ public void SpellUsed(PlayerData data){
 // | these methods are used by spells
 // | which create temporary triggers
 // V
-public void SpellTrigger_Freeze(TriggerArgs args){
+public void SpellTrigger_Mind_Lock(TriggerArgs args){
 	if (args.Sender is IPlayer){
 		IPlayer ply = (IPlayer)args.Sender;
 		if (ply.GetUser() != null){
@@ -867,7 +874,7 @@ public void SpellTrigger_MindControl(TriggerArgs args){
 		if (!body.IsDead && Game.TotalElapsedGameTime > m_nextMindControl){
 			foreach (IObject obj in Game.GetObjectsByCustomId("MindControlTrigger")) obj.Remove();
 
-			controlledPlayers.Add(new MindControlData(body, body.GetUser(), m_mindController, Game.TotalElapsedGameTime + 7000f));
+			controlledPlayers.Add(new MindControlData(body, body.GetUser(), m_mindController, Game.TotalElapsedGameTime + 7000f, m_mindController.Player.GetHealth()));
 
 			Game.PlayEffect("Electric", body.GetWorldPosition() + new Vector2(0, 8f));
 			Game.PlayEffect("Electric", m_mindController.Player.GetWorldPosition() + new Vector2(0, 8f));
@@ -884,14 +891,15 @@ public void SpellTrigger_MindControl(TriggerArgs args){
 
 public void Tick_MindControl(){
 	for(int i = controlledPlayers.Count - 1; i >=0; i--){
-		PlayerData contData = controlledPlayers[i].ControllerData;
-		IPlayer victPlayer = controlledPlayers[i].Player;
-		IUser victUser = controlledPlayers[i].User;
+		MindControlData mindData = controlledPlayers[i];
+		PlayerData contData = mindData.ControllerData;
+		IPlayer victPlayer = mindData.Player;
+		IUser victUser = mindData.User;
 
 		if (victPlayer.IsRemoved){
 			// if player body is removed, delete entry
 			controlledPlayers.RemoveAt(i);
-		} else if (controlledPlayers[i].EndTime <= Game.TotalElapsedGameTime){
+		} else if (mindData.EndTime <= Game.TotalElapsedGameTime){
 			Game.PlayEffect("Electric", victPlayer.GetWorldPosition() + new Vector2(0, 8f));
 
 			// if enough time passed, return user
@@ -902,13 +910,15 @@ public void Tick_MindControl(){
 			// if player is not dead, make controller "exit"
 			if (!victPlayer.IsDead){
 				IPlayer controller = Game.CreatePlayer(victPlayer.GetWorldPosition() + new Vector2(victPlayer.FacingDirection * 24f, 0));
-				controller.SetHealth(contData.LastHealth);
+				controller.SetHealth(mindData.ControllerHealth);
 				if (contData.User != null){
 					Game.PlayEffect("Electric", controller.GetWorldPosition() + new Vector2(0, 8f));
 					contData.Player = controller;
+					contData.LastHealth = mindData.ControllerHealth;
 					contData.StartHealth = contData.LastHealth;
 					controller.SetUser(contData.User);
 					controller.SetProfile(contData.User.GetProfile());
+					controller.SetTeam(contData.Team);
 					players.Add(contData);
 				} else {
 					controller.Kill();
@@ -920,6 +930,40 @@ public void Tick_MindControl(){
 			controlledPlayers.RemoveAt(i);
 		}
 	}
+}
+
+public void CheckGameover(){
+	List <PlayerTeam> teams = new List<PlayerTeam>();
+	String LastPlyName = "";
+	foreach(PlayerData PlyDat in players) {
+		if (!PlyDat.Player.IsDead){
+			if (teams.Count == 0) {
+				teams.Add(PlyDat.Team);
+				LastPlyName = PlyDat.User.Name;
+			}
+			else if (teams[0] != PlyDat.Team || PlyDat.Team == PlayerTeam.Independent) teams.Add(PlyDat.Team);
+		}
+	}
+	foreach(MindControlData MindData in controlledPlayers) {
+		PlayerData PlyDat = MindData.ControllerData;
+		if (UserStillHere(PlyDat.User)){
+			if (teams.Count == 0) teams.Add(PlyDat.Team); // avoid to call teams[0] when it's empty
+			else if (teams[0] != PlyDat.Team || PlyDat.Team == PlayerTeam.Independent) teams.Add(PlyDat.Team);
+		}
+	}
+	if (teams.Count == 1) {
+		if (teams[0] != PlayerTeam.Independent) {
+			switch (teams[0]) {
+				case PlayerTeam.Team1 : LastPlyName = "Blue team"; break;
+				case PlayerTeam.Team2 : LastPlyName = "Red team"; break;
+				case PlayerTeam.Team3 : LastPlyName = "Green team"; break;
+				case PlayerTeam.Team4 : LastPlyName = "Yellow team"; break;
+				default : break;
+			}
+		}
+		Game.SetGameOver(LastPlyName + " wins !");
+	}
+	if (teams.Count == 0) Game.SetGameOver("Draw");
 }
 
 //==================================================================//
@@ -992,7 +1036,7 @@ public void GiveBasicSpells(PlayerData data){
 		temp.Add(new PlayerData.BookData.SpellData("FUS RO DAH", 75, 15000));
 		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 65, 8000f));
 		temp.Add(new PlayerData.BookData.SpellData("SuperJump", 30, 1000f));
-		temp.Add(new PlayerData.BookData.SpellData("Freeze", 100, 40000f));
+		temp.Add(new PlayerData.BookData.SpellData("Mind Lock", 100, 40000f));
 
 		data.Books.Add(new PlayerData.BookData("Alteration", temp));
 	}
