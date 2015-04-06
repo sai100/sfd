@@ -17,25 +17,25 @@ private const string TIME_LIMIT_MODE = "auto";			    		// set to "main": start t
 private bool HOSTING_ACTIVATED = false;								// set to true to kill host at the beginning of each round.
 //=========================<commentator>============================//
 private string [] ONDEATH_TEXT = new string []{
-	"{0} : Fly you fools !",
+	"{0} : Fly you fools!",
 	"{0} failed a saving throw.",
 	"{0} wasen't my serf anyway.",
-	"Avada kedavra !",
-	"Hey, {0} needs a necromancer !",
+	"Avada kedavra!",
+	"Hey, {0} needs a necromancer!",
 	"{0} isn't dead, he is figthing a balrog.",
 	"{0} is out of mana. Forever."};
 
 private string [] ONSTART_TEXT = new string []{
-	"Let there be figth !",
+	"Let there be figth!",
 	"This isn't the magic you're looking for.",
-	"Migth and Magic !", 
-	"Have you heard about Gwandalf the pilgrim ?",
-	"Don't SPELL it wrong ! Get it ?",
-	"Pro tip : use suicide spell NOW !", 
+	"Migth and Magic!", 
+	"Have you heard about Gwandalf the pilgrim?",
+	"Don't SPELL it wrong! Get it?",
+	"Pro tip: use suicide spell NOW!", 
 	"It's like a charm",
-	"(Battleground)spell. It cast a spell to battleground",
-	"HADOUKEN ! Uhh, wrong game.",
-	"What kind of sorcery is this ?"};
+	"(Battleground)spell. It casts a spell to battleground",
+	"HADOUKEN! Uhh, wrong game.",
+	"What kind of sorcery is this?"};
 //==================================================================//
 //=================< DO NOT TOUCH ANYTHING IN BELOW >===============//
 //==============< IF YOU'RE NOT SURE WHAT YOU'RE DOING >============//
@@ -44,6 +44,13 @@ private string [] ONSTART_TEXT = new string []{
 // ====================== //
 // ===< DECLARATIONS >=== //
 // ====================== //
+
+// general mod data
+public class ModData{
+	// we'll add something else later
+	public string Version = "0.1.2 (beta)";
+}
+private ModData modData = new ModData();
 
 // general player data
 public class PlayerData {
@@ -208,6 +215,8 @@ public void OnStartup(){
 	else foreach (string mapName in restrictedMaps) if (mapName == Game.MapName) mapIsGood = false;
 
 	if (mapIsGood){
+		// for custom gameover
+		Game.SetMapType(MapType.Custom);
 		// give each player a set of spells
 		foreach(IPlayer ply in Game.GetPlayers()) 
 			if (ply.GetUser() != null) players.Add(new PlayerData(ply.GetUser(), ply, 100));
@@ -236,7 +245,7 @@ public void OnStartup(){
 		if(HOSTING_ACTIVATED) Game.GetPlayers()[0].Remove();
 
 		// some messages
-		ModMessage("v0.1.2 (beta)");
+		ModMessage(modData.Version);
 		if (HOSTING_ACTIVATED) ModMessage("Host is AFK");
 		Game.ShowPopupMessage("Controls:\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=WALKING] + [KEY=BLOCK_AIM] - change spellbook\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=BLOCK_AIM] - change spell\n[KEY=ATTACK] - use spell\n", new Color(220,50,50));
 	} else {
@@ -871,6 +880,10 @@ float m_nextMindControl = 0f;
 public void SpellTrigger_MindControl(TriggerArgs args){
 	if (args.Sender is IPlayer){
 		IPlayer body = (IPlayer)args.Sender;
+
+		foreach (MindControlData data in controlledPlayers)
+			if (data.Player == body) return;
+
 		if (!body.IsDead && Game.TotalElapsedGameTime > m_nextMindControl && body != m_mindController.Player){
 			foreach (IObject obj in Game.GetObjectsByCustomId("MindControlTrigger")) obj.Remove();
 
@@ -937,31 +950,43 @@ public void CheckGameover(){
 	String winner = "";
 
 	foreach (PlayerData data in players)
-		if (!data.Player.IsDead)
-			if (!teams.Contains(data.Team)) teams.Add(data.Team);
+		if (!data.Player.IsDead && !teams.Contains(data.Team)) teams.Add(data.Team);
 	
 	foreach (MindControlData MindData in controlledPlayers){
 		PlayerData contData = MindData.ControllerData;
-		if (UserStillHere(contData.User))
-			if (!teams.Contains(contData.Team)) teams.Add(contData.Team);
+		if (UserStillHere(contData.User) && !teams.Contains(contData.Team)) teams.Add(contData.Team);
 	}
 
-	if (teams.Count == 1) {
-		if (teams[0] != PlayerTeam.Independent){
-			switch (teams[0]) {
-				case PlayerTeam.Team1 : winner = "Blue team"; break;
-				case PlayerTeam.Team2 : winner = "Red team"; break;
-				case PlayerTeam.Team3 : winner = "Green team"; break;
-				case PlayerTeam.Team4 : winner = "Yellow team"; break;
-				default : break;
+	switch (teams.Count){
+		case 5:
+			Game.ShowPopupMessage("Wut?");
+			break;
+		case 4:
+		case 3:
+		case 2:
+			return;
+		case 1:
+			if (teams[0] != PlayerTeam.Independent){
+				switch (teams[0]) {
+					case PlayerTeam.Team1 : winner = "Blue team"; break;
+					case PlayerTeam.Team2 : winner = "Red team"; break;
+					case PlayerTeam.Team3 : winner = "Green team"; break;
+					case PlayerTeam.Team4 : winner = "Yellow team"; break;
+				}
+			} else {
+				List <IPlayer> plysAlive = new List<IPlayer>();
+				foreach (IPlayer ply in Game.GetPlayers())
+					if (!ply.IsDead) plysAlive.Add(ply);
+				if (plysAlive.Count == 1)
+					winner = plysAlive[0].GetProfile().Name;
+				else return;
 			}
-		} else {
-			foreach (IPlayer ply in Game.GetPlayers())
-				if (!ply.IsDead) winner = ply.GetProfile().Name;
-		}
-		Game.SetGameOver(winner + " wins!");
+			Game.SetGameOver(winner + " wins!");
+			break;
+		case 0:
+			Game.SetGameOver("Draw");
+			break;
 	}
-	if (teams.Count == 0) Game.SetGameOver("Draw");
 }
 
 //==================================================================//
