@@ -617,19 +617,6 @@ public void SpellUsed(PlayerData data){
 			}
 		m_reviveTeam = ply.GetTeam();
 		break;
-	case "Mind Control":
-		m_mindController = data;
-		for (int i = 0; i <= 4; i++){
-			IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
-				"AreaTrigger",
-				ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 50 + ((i-1)*8), 2f),
-				0
-			));
-			areaTrigger.CustomId = "MindControlTrigger";
-			areaTrigger.SetScriptMethod("SpellTrigger_MindControl");
-			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 250f, false));
-		}
-		break;
 	case "Defender":
 		PlayerTeam defendingTeam = ply.GetTeam();
 		IPlayer defender = Game.CreatePlayer(ply.GetWorldPosition() + new Vector2(ply.FacingDirection*25, 0f));
@@ -662,16 +649,29 @@ public void SpellUsed(PlayerData data){
 		}
 		break;
 	case "Mind Lock":
-		{
-			for (int i = 0; i <= 4; i++){
-				IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
-					"AreaTrigger",
-					ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 50 + ((i-1)*8), 2f),
-					0
-				));
-				areaTrigger.SetScriptMethod("SpellTrigger_Mind_Lock");
-				projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 250f, false));
-			}
+		for (int i = 0; i <= 9; i++){
+			int k = i/5;
+			IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
+				"AreaTrigger",
+				ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 24 + ((i-1-(k*5))*10), 2f + (k*16)),
+				0
+			));
+			areaTrigger.SetScriptMethod("SpellTrigger_Mind_Lock");
+			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 150f, false));
+		}
+		break;
+	case "Mind Control":
+		m_mindController = data;
+		for (int i = 0; i <= 9; i++){
+			int k = i/5;
+			IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
+				"AreaTrigger",
+				ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 24 + ((i-1-(k*5))*10), 2f + (k*16)),
+				0
+			));
+			areaTrigger.CustomId = "MindControlTrigger";
+			areaTrigger.SetScriptMethod("SpellTrigger_MindControl");
+			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 150f, false));
 		}
 		break;
 	case "FUS RO DAH":
@@ -871,7 +871,7 @@ float m_nextMindControl = 0f;
 public void SpellTrigger_MindControl(TriggerArgs args){
 	if (args.Sender is IPlayer){
 		IPlayer body = (IPlayer)args.Sender;
-		if (!body.IsDead && Game.TotalElapsedGameTime > m_nextMindControl){
+		if (!body.IsDead && Game.TotalElapsedGameTime > m_nextMindControl && body != m_mindController.Player){
 			foreach (IObject obj in Game.GetObjectsByCustomId("MindControlTrigger")) obj.Remove();
 
 			controlledPlayers.Add(new MindControlData(body, body.GetUser(), m_mindController, Game.TotalElapsedGameTime + 7000f, m_mindController.Player.GetHealth()));
@@ -934,34 +934,32 @@ public void Tick_MindControl(){
 
 public void CheckGameover(){
 	List <PlayerTeam> teams = new List<PlayerTeam>();
-	String LastPlyName = "";
-	foreach(PlayerData PlyDat in players) {
-		if (!PlyDat.Player.IsDead){
-			if (teams.Count == 0) {
-				teams.Add(PlyDat.Team);
-				LastPlyName = PlyDat.User.Name;
-			}
-			else if (teams[0] != PlyDat.Team || PlyDat.Team == PlayerTeam.Independent) teams.Add(PlyDat.Team);
-		}
+	String winner = "";
+
+	foreach (PlayerData data in players)
+		if (!data.Player.IsDead)
+			if (!teams.Contains(data.Team)) teams.Add(data.Team);
+	
+	foreach (MindControlData MindData in controlledPlayers){
+		PlayerData contData = MindData.ControllerData;
+		if (UserStillHere(contData.User))
+			if (!teams.Contains(contData.Team)) teams.Add(contData.Team);
 	}
-	foreach(MindControlData MindData in controlledPlayers) {
-		PlayerData PlyDat = MindData.ControllerData;
-		if (UserStillHere(PlyDat.User)){
-			if (teams.Count == 0) teams.Add(PlyDat.Team); // avoid to call teams[0] when it's empty
-			else if (teams[0] != PlyDat.Team || PlyDat.Team == PlayerTeam.Independent) teams.Add(PlyDat.Team);
-		}
-	}
+
 	if (teams.Count == 1) {
-		if (teams[0] != PlayerTeam.Independent) {
+		if (teams[0] != PlayerTeam.Independent){
 			switch (teams[0]) {
-				case PlayerTeam.Team1 : LastPlyName = "Blue team"; break;
-				case PlayerTeam.Team2 : LastPlyName = "Red team"; break;
-				case PlayerTeam.Team3 : LastPlyName = "Green team"; break;
-				case PlayerTeam.Team4 : LastPlyName = "Yellow team"; break;
+				case PlayerTeam.Team1 : winner = "Blue team"; break;
+				case PlayerTeam.Team2 : winner = "Red team"; break;
+				case PlayerTeam.Team3 : winner = "Green team"; break;
+				case PlayerTeam.Team4 : winner = "Yellow team"; break;
 				default : break;
 			}
+		} else {
+			foreach (IPlayer ply in Game.GetPlayers())
+				if (!ply.IsDead) winner = ply.GetProfile().Name;
 		}
-		Game.SetGameOver(LastPlyName + " wins !");
+		Game.SetGameOver(winner + " wins!");
 	}
 	if (teams.Count == 0) Game.SetGameOver("Draw");
 }
