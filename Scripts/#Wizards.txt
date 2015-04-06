@@ -257,6 +257,7 @@ public void Death(TriggerArgs args){
 			}
 		}
 	}
+	CheckGameover();
 }
 
 public void FastTick(TriggerArgs args){
@@ -872,7 +873,7 @@ public void SpellTrigger_MindControl(TriggerArgs args){
 		IPlayer body = (IPlayer)args.Sender;
 		if (!body.IsDead && Game.TotalElapsedGameTime > m_nextMindControl){
 			foreach (IObject obj in Game.GetObjectsByCustomId("MindControlTrigger")) obj.Remove();
-			if (m_mindController.Player.GetTeam() != PlayerTeam.Independent)Game.ShowPopupMessage("This is SPARTA");
+
 			controlledPlayers.Add(new MindControlData(body, body.GetUser(), m_mindController, Game.TotalElapsedGameTime + 7000f, m_mindController.Player.GetHealth()));
 
 			Game.PlayEffect("Electric", body.GetWorldPosition() + new Vector2(0, 8f));
@@ -929,6 +930,40 @@ public void Tick_MindControl(){
 			controlledPlayers.RemoveAt(i);
 		}
 	}
+}
+
+public void CheckGameover(){
+	List <PlayerTeam> teams = new List<PlayerTeam>();
+	String LastPlyName = "";
+	foreach(PlayerData PlyDat in players) {
+		if (!PlyDat.Player.IsDead){
+			if (teams.Count == 0) {
+				teams.Add(PlyDat.Team);
+				LastPlyName = PlyDat.User.Name;
+			}
+			else if (teams[0] != PlyDat.Team || PlyDat.Team == PlayerTeam.Independent) teams.Add(PlyDat.Team);
+		}
+	}
+	foreach(MindControlData MindData in controlledPlayers) {
+		PlayerData PlyDat = MindData.ControllerData;
+		if (UserStillHere(PlyDat.User)){
+			if (teams.Count == 0) teams.Add(PlyDat.Team); // avoid to call teams[0] when it's empty
+			else if (teams[0] != PlyDat.Team || PlyDat.Team == PlayerTeam.Independent) teams.Add(PlyDat.Team);
+		}
+	}
+	if (teams.Count == 1) {
+		if (teams[0] != PlayerTeam.Independent) {
+			switch (teams[0]) {
+				case PlayerTeam.Team1 : LastPlyName = "Blue team"; break;
+				case PlayerTeam.Team2 : LastPlyName = "Red team"; break;
+				case PlayerTeam.Team3 : LastPlyName = "Green team"; break;
+				case PlayerTeam.Team4 : LastPlyName = "Yellow team"; break;
+				default : break;
+			}
+		}
+		Game.SetGameOver(LastPlyName + " wins !");
+	}
+	if (teams.Count == 0) Game.SetGameOver("Draw");
 }
 
 //==================================================================//
