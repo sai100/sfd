@@ -95,7 +95,7 @@ public class PlayerData {
 		this.User = user;
 		this.Player = ply;
 		this.Mana = mana;
-		this.Team = this.Player.GetTeam();
+		this.Team = ply.GetTeam();
 	}
 
 	public PlayerData (){}
@@ -890,15 +890,15 @@ public void SpellTrigger_MindControl(TriggerArgs args){
 
 public void Tick_MindControl(){
 	for(int i = controlledPlayers.Count - 1; i >=0; i--){
-		MindControlData MindData = controlledPlayers[i];
-		PlayerData contData = controlledPlayers[i].ControllerData;
-		IPlayer victPlayer = controlledPlayers[i].Player;
-		IUser victUser = controlledPlayers[i].User;
+		MindControlData mindData = controlledPlayers[i];
+		PlayerData contData = mindData.ControllerData;
+		IPlayer victPlayer = mindData.Player;
+		IUser victUser = mindData.User;
 
 		if (victPlayer.IsRemoved){
 			// if player body is removed, delete entry
 			controlledPlayers.RemoveAt(i);
-		} else if (controlledPlayers[i].EndTime <= Game.TotalElapsedGameTime){
+		} else if (mindData.EndTime <= Game.TotalElapsedGameTime){
 			Game.PlayEffect("Electric", victPlayer.GetWorldPosition() + new Vector2(0, 8f));
 
 			// if enough time passed, return user
@@ -909,11 +909,11 @@ public void Tick_MindControl(){
 			// if player is not dead, make controller "exit"
 			if (!victPlayer.IsDead){
 				IPlayer controller = Game.CreatePlayer(victPlayer.GetWorldPosition() + new Vector2(victPlayer.FacingDirection * 24f, 0));
-				controller.SetHealth(MindData.ControllerHealth);
+				controller.SetHealth(mindData.ControllerHealth);
 				if (contData.User != null){
 					Game.PlayEffect("Electric", controller.GetWorldPosition() + new Vector2(0, 8f));
 					contData.Player = controller;
-					contData.LastHealth = MindData.ControllerHealth;
+					contData.LastHealth = mindData.ControllerHealth;
 					contData.StartHealth = contData.LastHealth;
 					controller.SetUser(contData.User);
 					controller.SetProfile(contData.User.GetProfile());
