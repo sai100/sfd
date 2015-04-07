@@ -57,6 +57,11 @@ private const int EXPLODE_ON_DEATH_DELAY = 5;		    			// Time before the corpse 
 //==============< IF YOU'RE NOT SURE WHAT YOU'RE DOING >============//
 //==================================================================//
 
+public class ModData{
+	// we'll add something else later
+	public string Version = "1.1 (beta)";
+}
+private ModData modData = new ModData();
 
 private Random rand = new Random();
 private bool INSTAGIB_ON = false;
@@ -125,10 +130,7 @@ private string [] typingMachine_templatesWinTeam = new string [] {
 private bool gameOverSaid = false;
 
 string[] restrictedMaps = new string[]{
-	"#Chalet Z",
-	"#Abadoned Subway (BG)",
-	"#Terminator",
-	"#Build Site (KotH)"
+	"#Abadoned Subway (BG)"
 };
 
 // ============================ |
@@ -154,6 +156,7 @@ private class PlayerData {
 
 	public IUser User = null;
 	public IPlayer Body = null;
+	public PlayerTeam Team = PlayerTeam.Independent;
 	public bool WasSetOnFire = false;
 	public bool IsBleeding = HC_BLEEDING_ON_START;
 	public PlayerData(float startHealth, IUser user, IPlayer body, bool wasSetOnFire){
@@ -161,6 +164,7 @@ private class PlayerData {
 		this.User = user;
 		this.Body = body;
 		this.WasSetOnFire = wasSetOnFire;
+		this.Team = body.GetTeam();
 	}
 
 	public PlayerData(){}
@@ -168,9 +172,11 @@ private class PlayerData {
 
 public void OnStartup(){
 	bool mapIsGood = true;
+	if (Game.GetMapType() == MapType.Custom) mapIsGood = false;
 	foreach (string mapName in restrictedMaps) if (mapName == Game.MapName) mapIsGood = false;
 	if (mapIsGood){
 		INSTAGIB_ON = (INSTAGIB_ACTIVATED && (rand.Next(INSTAGIB_CHANCE) == 0 || !INSTAGIB_RANDOM));
+		if (!INSTAGIB_ON) Game.SetMapType(MapType.Custom);
 
 		// set up the triggers
 			// fast tick trigger
@@ -207,8 +213,8 @@ public void OnStartup(){
 			}
 
 		// settings based method executions
-		if (INSTAGIB_ON)  Prepare_Instagib();
-		else if (HARDCORE_ACTIVATED) Prepare_CustomDamage();
+		if (INSTAGIB_ON) Prepare_Instagib();
+		else Prepare_CustomDamage();
 
 		if (HOSTING_ACTIVATED){
 			hostPlayer = Game.GetActiveUsers()[0].GetPlayer();
@@ -226,7 +232,7 @@ public void OnStartup(){
 		}
 
 		// some messages
-		ModMessage("v1.1 (beta)");
+		ModMessage(modData.Version);
 		if (HOSTING_ACTIVATED) ModMessage("Host is AFK");
 		if (INSTAGIB_ON && INSTAGIB_RANDOM) ModMessage("INSTAGIB ROUND!");
 	} else {
@@ -313,13 +319,14 @@ public void Death(TriggerArgs args){
 			players[index].Label = label;
 			players[index].DeathDamageTaken = damage;
 			players[index].DeathTime = Game.TotalElapsedGameTime;
+
+			if (EXPLODE_ON_DEATH && EXPLODE_ON_DEATH_DELAY == 0) Game.TriggerExplosion(ply.GetWorldPosition());
 		}
 	}
 	if (COMMENT_ACTIVATED){
 		if (ply.GetUser() != null) TypingMachine_Print("death" , new string[] {ply.GetUser().Name});
 		else TypingMachine_Print("disconnect", new string[] {ply.GetProfile().Name});
 	}
-	if (EXPLODE_ON_DEATH && EXPLODE_ON_DEATH_DELAY == 0) Game.TriggerExplosion(ply.GetWorldPosition());	
 }
 
 // ============================= |
@@ -356,6 +363,7 @@ public void Tick_Revive(){
 					diedNow = true;
 					if (players[i].Label != null) players[i].Label.Remove();
 					players.RemoveAt(i);
+					CheckGameover();
 				}
 
 				// check for crouching players nearby
@@ -374,6 +382,7 @@ public void Tick_Revive(){
 								// remove the rest
 								label.Remove();
 								players.RemoveAt(i);
+								CheckGameover();
 
 								spawnedNow = true;
 								break;
@@ -419,6 +428,7 @@ public void Tick_Revive(){
 			} else {
 				if (players[i].Label != null) players[i].Label.Remove();
 				players.RemoveAt(i);
+				CheckGameover();
 			}
 		}
 	}
@@ -488,6 +498,7 @@ public void Tick_Hardcore_Main(){
 		if (data.Body.IsRemoved) {
 			if (players[i].Label != null) players[i].Label.Remove();
 			players.RemoveAt(i);
+			CheckGameover();
 		} else {
 			IPlayerStatistics stats = data.Body.Statistics;
 			float damage =
@@ -580,9 +591,7 @@ public void Tick_TimeLimit(){
 		  	}
 		  m_lastElapsedSeconds = currentElapsedSeconds;
 	   	}
-   	}
-   	else if (WAS_ACTIVATED)
-   	{
+   	} else if (WAS_ACTIVATED) {
 		Game.HidePopupMessage();
    	}
 }
@@ -651,8 +660,48 @@ public void Tick_ExplodeOnDeath(){
 				Game.TriggerExplosion(data.Body.GetWorldPosition());
 				if (players[i].Label != null) players[i].Label.Remove();
 				players.RemoveAt(i);
+				CheckGameover();
 			}
 		}
+	}
+}
+
+public void CheckGameover(){
+	List <PlayerTeam> teams = new List<PlayerTeam>();
+	String winner = "";
+
+	foreach (PlayerData data in players)
+		if (!data.Body.IsRemoved && !teams.Contains(data.Team)) teams.Add(data.Team);
+
+	switch (teams.Count){
+		case 5:
+			Game.ShowPopupMessage("Wut?");
+			break;
+		case 4:
+		case 3:
+		case 2:
+			return;
+		case 1:
+			if (teams[0] != PlayerTeam.Independent){
+				switch (teams[0]) {
+					case PlayerTeam.Team1 : winner = "Blue team"; break;
+					case PlayerTeam.Team2 : winner = "Red team"; break;
+					case PlayerTeam.Team3 : winner = "Green team"; break;
+					case PlayerTeam.Team4 : winner = "Yellow team"; break;
+				}
+			} else {
+				List <IPlayer> plysAlive = new List<IPlayer>();
+				foreach (IPlayer ply in Game.GetPlayers())
+					if (!ply.IsDead) plysAlive.Add(ply);
+				if (plysAlive.Count == 1)
+					winner = plysAlive[0].GetProfile().Name;
+				else return;
+			}
+			Game.SetGameOver(winner + " wins!");
+			break;
+		case 0:
+			Game.SetGameOver("Draw");
+			break;
 	}
 }
 
@@ -674,15 +723,15 @@ public Color GetTeamColor(PlayerTeam team){
 }
 
 private PlayerData GetPlayerData(IPlayer ply){
-	for(int i = players.Count - 1; i >=0; i--){
+	for (int i = players.Count - 1; i >=0; i--){
 		if (players[i].Body == ply) return players[i];
 	}
 	return new PlayerData(); 
 }
 
 public int GetPlayerDataIndex(IPlayer ply){
-	for(int i = players.Count -1; i>=0; i--)
-		if(ply == players[i].Body) return i;
+	for (int i = players.Count -1; i>=0; i--)
+		if (ply == players[i].Body) return i;
 	return 0;
 }
 
@@ -697,14 +746,14 @@ public void TypingMachine_Print(string reason, string[] args) {
 
 	// determine what type of text should be displayed
 	switch (reason){
-		case "death" : text = string.Format(typingMachine_templatesDeath[rand.Next(typingMachine_templatesDeath.Length)], args[0]); break;
-		case "revive" : text = string.Format(typingMachine_templatesRevive[rand.Next(typingMachine_templatesRevive.Length)], args[0], args[1]); break;
-		case "beginning" : text = typingMachine_templatesWelcome[rand.Next(typingMachine_templatesWelcome.Length)]; break; 
-		case "gib" : text = string.Format(typingMachine_templatesGib[rand.Next(typingMachine_templatesGib.Length)], args[0]); break;
-		case "disconnect" :  text = string.Format(typingMachine_templatesDisconnect[rand.Next(typingMachine_templatesDisconnect.Length)], args[0]); break;
-		case "draw" : text = typingMachine_templatesDraw[rand.Next(typingMachine_templatesDraw.Length)]; break; 
-		case "win" : text = string.Format(typingMachine_templatesWin[rand.Next(typingMachine_templatesWin.Length)], args[0]); break;
-		case "winTeam" : text = string.Format(typingMachine_templatesWinTeam[rand.Next(typingMachine_templatesWinTeam.Length)], args[0]); break;
+		case "death" : text = string.Format( typingMachine_templatesDeath [ rand.Next( typingMachine_templatesDeath.Length ) ], args[0]); break;
+		case "revive" : text = string.Format( typingMachine_templatesRevive [ rand.Next( typingMachine_templatesRevive.Length ) ], args[0], args[1]); break;
+		case "beginning" : text = typingMachine_templatesWelcome [ rand.Next( typingMachine_templatesWelcome.Length ) ]; break; 
+		case "gib" : text = string.Format(typingMachine_templatesGib[rand.Next( typingMachine_templatesGib.Length ) ], args[0]); break;
+		case "disconnect" :  text = string.Format( typingMachine_templatesDisconnect [ rand.Next( typingMachine_templatesDisconnect.Length ) ], args[0]); break;
+		case "draw" : text = typingMachine_templatesDraw [ rand.Next( typingMachine_templatesDraw.Length ) ]; break; 
+		case "win" : text = string.Format( typingMachine_templatesWin [ rand.Next( typingMachine_templatesWin.Length ) ], args[0]); break;
+		case "winTeam" : text = string.Format( typingMachine_templatesWinTeam [ rand.Next( typingMachine_templatesWinTeam.Length ) ], args[0]); break;
 		default : break;
 	}
 
@@ -764,5 +813,3 @@ public string LastTeam(){
 	}
 	return "none";
 }
-
-// another test comment
