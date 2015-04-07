@@ -16,6 +16,16 @@ private const string TIME_LIMIT_MODE = "auto";			    		// set to "main": start t
 //===========================<utilites>=============================//
 private bool HOSTING_ACTIVATED = false;								// set to true to kill host at the beginning of each round.
 //=========================<commentator>============================//
+//private bool COMMENTATOR_ACTIVATED = false;
+//==================================================================//
+//=================< DO NOT TOUCH ANYTHING IN BELOW >===============//
+//==============< IF YOU'RE NOT SURE WHAT YOU'RE DOING >============//
+//==================================================================//
+
+// ====================== //
+// ===< DECLARATIONS >=== //
+// ====================== //
+
 private string [] ONDEATH_TEXT = new string []{
 	"{0} : Fly you fools!",
 	"{0} failed a saving throw.",
@@ -36,14 +46,6 @@ private string [] ONSTART_TEXT = new string []{
 	"(Battleground)spell. It casts a spell to battleground",
 	"HADOUKEN! Uhh, wrong game.",
 	"What kind of sorcery is this?"};
-//==================================================================//
-//=================< DO NOT TOUCH ANYTHING IN BELOW >===============//
-//==============< IF YOU'RE NOT SURE WHAT YOU'RE DOING >============//
-//==================================================================//
-
-// ====================== //
-// ===< DECLARATIONS >=== //
-// ====================== //
 
 // general mod data
 public class ModData{
@@ -306,6 +308,7 @@ public void Tick_DeadPlayers(){
 			players.RemoveAt(i);
 		}
 	}
+	CheckGameover();
 }
 
 // display mana and other HUD
@@ -513,6 +516,7 @@ public void Tick_TimeLimit(){
 // check if timelimit should be activated now
 public bool TimeLimit_Check(){
 	if (TIME_LIMIT_MODE == "main") return true;
+	if (Game.GetActiveUsers().Length <= 2) return false;
 	else if (TIME_LIMIT_MODE == "auto"){
 		Dictionary<PlayerTeam, int> teams = new Dictionary<PlayerTeam, int>();
 		PlayerTeam playerATeam = PlayerTeam.Independent;
@@ -665,9 +669,10 @@ public void SpellUsed(PlayerData data){
 				ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 24 + ((i-1-(k*5))*10), 2f + (k*16)),
 				0
 			));
-			areaTrigger.SetScriptMethod("SpellTrigger_Mind_Lock");
+			areaTrigger.SetScriptMethod("SpellTrigger_MindLock");
 			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 150f, false));
 		}
+		m_mindLocker = ply;
 		break;
 	case "Mind Control":
 		m_mindController = data;
@@ -759,9 +764,11 @@ public void SpellUsed(PlayerData data){
 // | these methods are used by spells
 // | which create temporary triggers
 // V
-public void SpellTrigger_Mind_Lock(TriggerArgs args){
+IPlayer m_mindLocker = null;
+public void SpellTrigger_MindLock(TriggerArgs args){
 	if (args.Sender is IPlayer){
 		IPlayer ply = (IPlayer)args.Sender;
+		if (ply == m_mindLocker) return;
 		if (ply.GetUser() != null){
 			PlayerData data = GetPlayerData((IPlayer)args.Sender);
 			data.IsFrozen = true;
@@ -950,7 +957,7 @@ public void CheckGameover(){
 	String winner = "";
 
 	foreach (PlayerData data in players)
-		if (!data.Player.IsDead && !teams.Contains(data.Team)) teams.Add(data.Team);
+		if (!data.Player.IsRemoved && !data.Player.IsDead && !teams.Contains(data.Team)) teams.Add(data.Team);
 	
 	foreach (MindControlData MindData in controlledPlayers){
 		PlayerData contData = MindData.ControllerData;
@@ -1067,7 +1074,7 @@ public void GiveBasicSpells(PlayerData data){
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 		temp.Add(new PlayerData.BookData.SpellData("Grab", 25, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Shield", 75, 20000f));
-		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 125, 60000f));
+		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 150, 60000f));
 
 		data.Books.Add(new PlayerData.BookData("Mysticism", temp));
 	}
