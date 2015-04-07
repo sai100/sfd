@@ -919,6 +919,7 @@ public void Tick_MindControl(){
 		if (victPlayer.IsRemoved){
 			// if player body is removed, delete entry
 			controlledPlayers.RemoveAt(i);
+			CheckGameover();
 		} else if (mindData.EndTime <= Game.TotalElapsedGameTime){
 			Game.PlayEffect("Electric", victPlayer.GetWorldPosition() + new Vector2(0, 8f));
 
@@ -948,6 +949,7 @@ public void Tick_MindControl(){
 			}
 
 			controlledPlayers.RemoveAt(i);
+			CheckGameover();
 		}
 	}
 }
