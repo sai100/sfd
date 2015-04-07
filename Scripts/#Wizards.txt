@@ -866,6 +866,7 @@ public void SpellTrigger_Revive(TriggerArgs args){
 				revivedPlayer.SetTeam(m_reviveTeam);
 				data.Player.Remove();
 				data.Player = revivedPlayer;
+				data.Team = m_reviveTeam;
 
 				GetPlayerData(revivedPlayer).StartHealth = health;
 				GetPlayerData(revivedPlayer).Player = revivedPlayer;
