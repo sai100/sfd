@@ -85,7 +85,7 @@ public class PlayerData {
 			public string Name = "unnamed";
 			public int ManaCost = 0;
 			public float Cooldown = 0f;
-			public float LastUseTime = 0f;
+			public float LastUseTime = -40000f;
 
 			public SpellData (string name, int cost, float cooldown){
 				this.Name = name;
@@ -249,7 +249,7 @@ public void OnStartup(){
 		// some messages
 		ModMessage(modData.Version);
 		if (HOSTING_ACTIVATED) ModMessage("Host is AFK");
-		Game.ShowPopupMessage("Controls:\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=WALKING] + [KEY=BLOCK_AIM] - change spellbook\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=BLOCK_AIM] - change spell\n[KEY=ATTACK] - use spell\n", new Color(220,50,50));
+		Game.ShowPopupMessage("Controls:\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=WALKING] + [KEY=BLOCK_AIM] - change spellbook\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=BLOCK_AIM] - change spell\n[KEY=ATTACK] - use spell\n", new Color(100,220,255));
 	} else {
 		ModMessage("This map is restricted.");
 	}
@@ -636,7 +636,7 @@ public void SpellUsed(PlayerData data){
 		defender.SetBotType(BotType.TutorialA);
 		defender.SetTeam(defendingTeam);
 		break;
-	case "Grab":
+	case "Block":
 		IObject grab = Game.CreateObject("Wood03F", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*7, 2), 0);
 		projs.Add(new ProjData(grab, Game.TotalElapsedGameTime + 1200f, false));
 		break;
@@ -666,7 +666,7 @@ public void SpellUsed(PlayerData data){
 			int k = i/5;
 			IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
 				"AreaTrigger",
-				ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 24 + ((i-1-(k*5))*10), 2f + (k*16)),
+				ply.GetWorldPosition() + new Vector2(ply.FacingDirection * (24 + (i-1-(k*5))*10), 2f + (k*16)),
 				0
 			));
 			areaTrigger.SetScriptMethod("SpellTrigger_MindLock");
@@ -680,7 +680,7 @@ public void SpellUsed(PlayerData data){
 			int k = i/5;
 			IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
 				"AreaTrigger",
-				ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 24 + ((i-1-(k*5))*10), 2f + (k*16)),
+				ply.GetWorldPosition() + new Vector2(ply.FacingDirection * (24 + (i-1-(k*5))*10), 2f + (k*16)),
 				0
 			));
 			areaTrigger.CustomId = "MindControlTrigger";
@@ -1054,29 +1054,29 @@ public void GiveBasicSpells(PlayerData data){
 
 		data.Books.Add(new PlayerData.BookData("Destruction", temp));
 	}
-	{	// restoration spellbook
+	{	// protection spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 		temp.Add(new PlayerData.BookData.SpellData("Heal", 15, 500f));
+		temp.Add(new PlayerData.BookData.SpellData("Block", 25, 500f));
+		temp.Add(new PlayerData.BookData.SpellData("Shield", 75, 20000f));
 		temp.Add(new PlayerData.BookData.SpellData("Revive", 100, 30000f));
 
-		data.Books.Add(new PlayerData.BookData("Restoration", temp));
+		data.Books.Add(new PlayerData.BookData("Protection", temp));
 	}
 	{	// alteration spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 		temp.Add(new PlayerData.BookData.SpellData("FUS RO DAH", 75, 15000));
 		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 65, 8000f));
 		temp.Add(new PlayerData.BookData.SpellData("SuperJump", 30, 1000f));
-		temp.Add(new PlayerData.BookData.SpellData("Mind Lock", 100, 40000f));
 
 		data.Books.Add(new PlayerData.BookData("Alteration", temp));
 	}
-	{	// mysticism spellbook
+	{	// controlling spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
-		temp.Add(new PlayerData.BookData.SpellData("Grab", 25, 500f));
-		temp.Add(new PlayerData.BookData.SpellData("Shield", 75, 20000f));
+		temp.Add(new PlayerData.BookData.SpellData("Mind Lock", 100, 40000f));
 		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 150, 60000f));
 
-		data.Books.Add(new PlayerData.BookData("Mysticism", temp));
+		data.Books.Add(new PlayerData.BookData("Controlling", temp));
 	}
 	
 	// disabled spells
