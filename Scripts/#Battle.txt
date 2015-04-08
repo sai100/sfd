@@ -42,7 +42,7 @@ private const bool INSTAGIB_GIVE_SLOMO = true;			    		// set to "true" to give 
 private const bool COMMENT_ACTIVATED = false;			    		// set to "true" to make commenter speak through pop-ups
 private const int COMMENT_TYPE_SPEED = 50;			    			// number of leters per seconds when the commenter speaks
 //=========================<time limits>============================//
-private const bool TIME_LIMIT_ACTIVATED = true;		    			// set to "true" to remove (or explode) host player at start
+private const bool TIME_LIMIT_ACTIVATED = true;		    			// set to "true" to activate time limit
 private const int TIME_LIMIT_SECONDS = 1 * 60;			    		// choose the amount of time given to players to finish the round
 private const string TIME_LIMIT_MODE = "auto";			    		// set to "main": start timer at beginning; "auto": when 2 teams or 2 players left
 //===========================<hosting>==============================//
@@ -57,9 +57,10 @@ private const int EXPLODE_ON_DEATH_DELAY = 5;		    			// Time before the corpse 
 //==============< IF YOU'RE NOT SURE WHAT YOU'RE DOING >============//
 //==================================================================//
 
+// general mod data
 public class ModData{
 	// we'll add something else later
-	public string Version = "1.1 (beta)";
+	public string Version = "1.1";
 }
 private ModData modData = new ModData();
 
@@ -133,12 +134,6 @@ string[] restrictedMaps = new string[]{
 	"#Abadoned Subway (BG)"
 };
 
-// ============================ |
-// ========< THE CODE >======== |
-// ============================ V
-
-
-
 // where players' data will be stored
 private class PlayerData {
 	public float StartHealth = 0f;
@@ -169,6 +164,11 @@ private class PlayerData {
 
 	public PlayerData(){}
 }
+
+
+// ============================ |
+// ========< THE CODE >======== |
+// ============================ V
 
 public void OnStartup(){
 	bool mapIsGood = true;
@@ -255,7 +255,7 @@ public void TickSlow(TriggerArgs args){
 	if (EXPLODE_ON_DEATH) Tick_ExplodeOnDeath();
 }
 
-public void ShowSettings(){
+private void ShowSettings(){
 	string settings = "";
 	if (INSTAGIB_ON){
 		settings += "| - Instagib mode\n";
@@ -333,7 +333,7 @@ public void Death(TriggerArgs args){
 // =========< OPTIONS >========= |
 // ============================= V
 
-public void Tick_Revive(){
+private void Tick_Revive(){
 	// travel through dead players list
 	for(int i = players.Count - 1; i >=0; i--){
 		IPlayer body = players[i].Body;
@@ -434,7 +434,7 @@ public void Tick_Revive(){
 	}
 }
 
-public void RevivePlayer(IPlayer body, IPlayer reviver, IUser user, PlayerTeam team){
+private void RevivePlayer(IPlayer body, IPlayer reviver, IUser user, PlayerTeam team){
 	float health = (float)rand.Next(15,50);
 
 	IPlayer revivedPlayer = Game.CreatePlayer(body.GetWorldPosition());
@@ -449,7 +449,7 @@ public void RevivePlayer(IPlayer body, IPlayer reviver, IUser user, PlayerTeam t
 	if (COMMENT_ACTIVATED) TypingMachine_Print("revive" , new string[] {revivedPlayer.GetProfile().Name, reviver.GetProfile().Name});
 }
 
-public void Tick_Instagib(){
+private void Tick_Instagib(){
 	foreach (IPlayer ply in Game.GetPlayers()){
 		float damage = 0f;
 		if (INSTAGIB_MELEE){
@@ -465,7 +465,7 @@ public void Tick_Instagib(){
 	}
 }
 
-public void Prepare_Instagib(){
+private void Prepare_Instagib(){
 	Game.RunCommand("/IA 1");
 	foreach (IObject obj in Game.GetObjectsByName(new string[]{"SpawnWeapon", "SpawnWeaponArea", "SpawnWeaponAreaCeiling"})){
 		obj.Remove();
@@ -486,13 +486,13 @@ public void Prepare_Instagib_GiveItems(TriggerArgs args){
 }
 
 private List<PlayerData> players = new List<PlayerData>();
-public void Prepare_CustomDamage(){
+private void Prepare_CustomDamage(){
 	foreach (IPlayer ply in Game.GetPlayers())
 		if (ply.GetUser() != null)
 			players.Add(new PlayerData(100f, ply.GetUser(), ply, false));
 }
 
-public void Tick_Hardcore_Main(){
+private void Tick_Hardcore_Main(){
 	for(int i = players.Count - 1; i >=0; i--){
 		PlayerData data = players[i];
 		if (data.Body.IsRemoved) {
@@ -564,7 +564,7 @@ public void Tick_Bomb(TriggerArgs args){
 	}
 }
 
-public void Tick_TimeLimit(){
+private void Tick_TimeLimit(){
 	if (TimeLimit_Check() && Game.GetSingleObjectByCustomId("HideSettingsTrigger") == null){
 		if (!m_twoOpponentsRemaining){
 			// start tracking time
@@ -596,7 +596,7 @@ public void Tick_TimeLimit(){
    	}
 }
 
-public bool TimeLimit_Check(){
+private bool TimeLimit_Check(){
 	Dictionary<PlayerTeam, int> teams = new Dictionary<PlayerTeam, int>();
 	if (TIME_LIMIT_MODE == "main") return true;
 	else if (TIME_LIMIT_MODE == "auto"){
@@ -625,7 +625,7 @@ public bool TimeLimit_Check(){
 }
 
 
-public void Tick_Commentator(){
+private void Tick_Commentator(){
 	IObjectTimerTrigger timerTriger6 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
 	timerTriger6.SetIntervalTime(10000);
 	timerTriger6.SetRepeatCount(1);
@@ -652,7 +652,7 @@ public void GameOver_Commentator(TriggerArgs args){
 	}
 }
 
-public void Tick_ExplodeOnDeath(){
+private void Tick_ExplodeOnDeath(){
 	if (players.Count != 0){
 		for(int i = players.Count -1; i > -1; i--){
 			PlayerData data = players[i];
@@ -666,7 +666,7 @@ public void Tick_ExplodeOnDeath(){
 	}
 }
 
-public void CheckGameover(){
+private void CheckGameover(){
 	List <PlayerTeam> teams = new List<PlayerTeam>();
 	String winner = "";
 
@@ -710,11 +710,11 @@ public void CheckGameover(){
 // =========< HELPERS >========= |
 // ============================= V
 
-public void ModMessage(string text){
+private void ModMessage(string text){
 	Game.RunCommand("/MSG #Battle mod: " + text);
 }
 
-public Color GetTeamColor(PlayerTeam team){
+private Color GetTeamColor(PlayerTeam team){
 	if (team == PlayerTeam.Team1) return new Color(124, 124, 246);
 	if (team == PlayerTeam.Team2) return new Color(245, 78, 78);
 	if (team == PlayerTeam.Team3) return new Color(5, 219, 5);
@@ -729,20 +729,20 @@ private PlayerData GetPlayerData(IPlayer ply){
 	return new PlayerData(); 
 }
 
-public int GetPlayerDataIndex(IPlayer ply){
+private int GetPlayerDataIndex(IPlayer ply){
 	for (int i = players.Count -1; i>=0; i--)
 		if (ply == players[i].Body) return i;
 	return 0;
 }
 
-public bool UserStillHere(IUser user){
+private bool UserStillHere(IUser user){
 	foreach (IUser usr in Game.GetActiveUsers())
 		if (usr.UserId == user.UserId) return true;
 	return false;
 }
 
 
-public void TypingMachine_Print(string reason, string[] args) {
+private void TypingMachine_Print(string reason, string[] args) {
 
 	// determine what type of text should be displayed
 	switch (reason){
@@ -770,7 +770,7 @@ public void TypingMachine_Print(string reason, string[] args) {
 	timerTrigger.Trigger();
 }
 
-public void TypingMachine_AddLetter(TriggerArgs args) {
+private void TypingMachine_AddLetter(TriggerArgs args) {
 	if (currentChar < text.Length) {
 		currentChar ++;
 		Game.ShowPopupMessage(text.Substring(0, currentChar));
@@ -782,7 +782,7 @@ public void TypingMachine_AddLetter(TriggerArgs args) {
 	}
 }
 
-public void TypingMachine_Stop(){
+private void TypingMachine_Stop(){
 	IObjectTimerTrigger timerTrigger = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
 	timerTrigger.SetIntervalTime(3000);
 	timerTrigger.SetRepeatCount(1);
@@ -791,11 +791,11 @@ public void TypingMachine_Stop(){
 	timerTrigger.Trigger();
 }
 
-public void TypingMachine_Clear(TriggerArgs args){
+private void TypingMachine_Clear(TriggerArgs args){
 	Game.HidePopupMessage();
 }
 
-public string LastTeam(){
+private string LastTeam(){
 	PlayerTeam testTeam = PlayerTeam.Independent;
 	foreach(IPlayer ply in Game.GetPlayers()){
 		if(!ply.IsDead) testTeam = ply.GetTeam(); break;

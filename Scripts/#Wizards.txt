@@ -14,7 +14,7 @@ private const bool TIME_LIMIT_ACTIVATED = true;		    			// set to "true" to remo
 private const int TIME_LIMIT_SECONDS = 90;			    			// choose the amount of time given to players to finish the round
 private const string TIME_LIMIT_MODE = "auto";			    		// set to "main": start timer at beginning; "auto": when 2 teams or 2 players left
 //===========================<utilites>=============================//
-private bool HOSTING_ACTIVATED = false;								// set to true to kill host at the beginning of each round.
+private bool HOSTING_ACTIVATED = true;								// set to true to kill host at the beginning of each round.
 //=========================<commentator>============================//
 //private bool COMMENTATOR_ACTIVATED = false;
 //==================================================================//
@@ -25,6 +25,13 @@ private bool HOSTING_ACTIVATED = false;								// set to true to kill host at th
 // ====================== //
 // ===< DECLARATIONS >=== //
 // ====================== //
+
+// general mod data
+public class ModData{
+	// we'll add something else later
+	public string Version = "0.1.2";
+}
+private ModData modData = new ModData();
 
 private string [] ONDEATH_TEXT = new string []{
 	"{0} : Fly you fools!",
@@ -46,13 +53,6 @@ private string [] ONSTART_TEXT = new string []{
 	"(Battleground)spell. It casts a spell to battleground",
 	"HADOUKEN! Uhh, wrong game.",
 	"What kind of sorcery is this?"};
-
-// general mod data
-public class ModData{
-	// we'll add something else later
-	public string Version = "0.1.2 (beta)";
-}
-private ModData modData = new ModData();
 
 // general player data
 public class PlayerData {
