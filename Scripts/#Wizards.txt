@@ -1,11 +1,13 @@
 //==================================================================//
 //============<    #WIZARDS GAMEMODE BY #OCTOTHORP    >=============//
-//============<                 v0.1.2                >=============//
+//============<                  v1.0                 >=============//
 //==================================================================//
 //=====================< #WIZARDS - settings >======================//
 //============================<general>=============================//
 private bool ALLOW_WEAPONS = false;									// set to true to allow guns and throwables
-private bool UNLIMITED_MANA = false;								// set to true to get unlimited mana
+private bool UNLIMITED_MANA = false;								// set to true to get unlimited mana (unstable now)
+private bool MANA_REGEN = true;										// set to true to make mana regenerate with time
+private float MANA_REGEN_MULTIPLIER = (float) 1.5;					// change the amount of regenerated mana
 private bool SPELL_COOLDOWN_ACTIVATED = false;						// set to true to enable spells cooldown
 private bool MANA_COOLDOWN_ACTIVATED = true;						// set to true to enable mana regeneration cooldown after spell use
 //private bool TIMELIMIT_ACTIVATED = true;							// set to true to enable time limit for last 2 players
@@ -16,7 +18,7 @@ private const string TIME_LIMIT_MODE = "auto";			    		// set to "main": start t
 //===========================<utilites>=============================//
 private bool HOSTING_ACTIVATED = true;								// set to true to kill host at the beginning of each round.
 //=========================<commentator>============================//
-//private bool COMMENTATOR_ACTIVATED = false;
+//private bool COMMENTATOR_ACTIVATED = false;						// work in progress here
 //==================================================================//
 //=================< DO NOT TOUCH ANYTHING IN BELOW >===============//
 //==============< IF YOU'RE NOT SURE WHAT YOU'RE DOING >============//
@@ -27,9 +29,9 @@ private bool HOSTING_ACTIVATED = true;								// set to true to kill host at the
 // ====================== //
 
 // general mod data
-public class ModData{
+private class ModData{
 	// we'll add something else later
-	public string Version = "0.1.2";
+	public string Version = "1.0";
 }
 private ModData modData = new ModData();
 
@@ -55,11 +57,11 @@ private string [] ONSTART_TEXT = new string []{
 	"What kind of sorcery is this?"};
 
 // general player data
-public class PlayerData {
+private class PlayerData {
 	public IUser User = null;
 	public IPlayer Player = null;
 
-	public int Mana = 0;
+	public float Mana = 0f;
 	public int SpellId = 0;
 	public int BookId = 0;
 
@@ -83,11 +85,11 @@ public class PlayerData {
 		public List<SpellData> Spells = new List<SpellData>();
 		public class SpellData {
 			public string Name = "unnamed";
-			public int ManaCost = 0;
+			public float ManaCost = 0f;
 			public float Cooldown = 0f;
 			public float LastUseTime = -40000f;
 
-			public SpellData (string name, int cost, float cooldown){
+			public SpellData (string name, float cost, float cooldown){
 				this.Name = name;
 				this.ManaCost = cost;
 				this.Cooldown = cooldown;
@@ -100,7 +102,7 @@ public class PlayerData {
 		}
 	}
 
-	public PlayerData (IUser user, IPlayer ply, int mana){
+	public PlayerData (IUser user, IPlayer ply, float mana){
 		this.User = user;
 		this.Player = ply;
 		this.Mana = mana;
@@ -247,7 +249,7 @@ public void OnStartup(){
 		if(HOSTING_ACTIVATED) Game.GetPlayers()[0].Remove();
 
 		// some messages
-		ModMessage(modData.Version);
+		ModMessage("v" + modData.Version);
 		if (HOSTING_ACTIVATED) ModMessage("Host is AFK");
 		Game.ShowPopupMessage("Controls:\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=WALKING] + [KEY=BLOCK_AIM] - change spellbook\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=BLOCK_AIM] - change spell\n[KEY=ATTACK] - use spell\n", new Color(100,220,255));
 	} else {
@@ -293,15 +295,15 @@ public void VerySlowTick(TriggerArgs args){
 }
 
 private bool messageHidden = false;
-public void Tick_PopupMessage(){
-	if (Game.TotalElapsedGameTime > 6000f && !messageHidden){
+private void Tick_PopupMessage(){
+	if (Game.TotalElapsedGameTime > 8000f && !messageHidden){
 		Game.HidePopupMessage();
 		messageHidden = true;
 	}
 }
 
 // check dead players if their body is present
-public void Tick_DeadPlayers(){
+private void Tick_DeadPlayers(){
 	for(int i = players.Count - 1; i >=0; i--){
 		if (players[i].Player.IsRemoved){
 			if (players[i].Label != null) players[i].Label.Remove();
@@ -312,18 +314,18 @@ public void Tick_DeadPlayers(){
 }
 
 // display mana and other HUD
-public void Tick_Display(){
+private void Tick_Display(){
 	for(int i = players.Count - 1; i >=0; i--){
 		PlayerData data = players[i];
 		IPlayer ply = data.Player;
-		int mana = data.Mana;
+		float mana = data.Mana;
 
 		// show mana only when it doesn't equal 100 or while player isn't dead (create new text label)
-		if (!data.Player.IsDead && mana != 100 && data.Label == null){
+		if (!data.Player.IsDead && mana != 100f && data.Label == null){
 			IObjectText labelNew = (IObjectText)Game.CreateObject("Text", Vector2.Zero, 0f);
 			labelNew.SetTextColor(GetTeamColor(ply.GetTeam()));
 			data.Label = labelNew;
-		} else if ((mana == 100 || data.Player.IsDead) && data.Label != null){
+		} else if ((mana == 100f || data.Player.IsDead) && data.Label != null){
 			data.Label.Remove();
 			data.Label = null;
 		}
@@ -339,13 +341,13 @@ public void Tick_Display(){
 				else filling += "  ";
 			data.Label.SetText("[" + filling + "]");*/
 
-			data.Label.SetText("Mana: " + mana.ToString());
+			data.Label.SetText("Mana: " + ((int)mana).ToString());
 		}
 	}
 }
 
 // catch player's movement to control spell changing and usage
-public void Tick_Controls(){
+private void Tick_Controls(){
 	for(int i = players.Count - 1; i >=0; i--){
 		PlayerData data = players[i];
 		IPlayer ply = data.Player;
@@ -384,7 +386,7 @@ public void Tick_Controls(){
 				"PWT",
 				ply.GetWorldPosition(),
 				data.Books[data.BookId].Spells[data.SpellId].Name +
-					" (" + (data.Books[data.BookId].Spells[data.SpellId].ManaCost).ToString() + //", " +
+					" (" + ((int)data.Books[data.BookId].Spells[data.SpellId].ManaCost).ToString() + //", " +
 					/*(data.Books[data.BookId].Spells[data.SpellId].Cooldown / 1000f).ToString().Replace(",", ".") +*/ ")"
 			);
 			// "multiple uses in one time"-protection
@@ -414,14 +416,14 @@ public void Tick_Controls(){
 }
 
 // set player's behaviour and conditions like "input enabled" or health
-public void Tick_Stats(){
+private void Tick_Stats(){
 	for(int i = players.Count - 1; i >=0; i--){
 		PlayerData data = players[i];
 		IPlayer ply = data.Player;
 
 		// mana pickups
 		if (ply.GetHealth() > data.LastHealth)
-			data.Mana += (int)(ply.GetHealth() - data.LastHealth);
+			data.Mana += ply.GetHealth() - data.LastHealth;
 
 		// damage
 		if (ply.GetUser() != null) ply.SetHealth(data.StartHealth -
@@ -434,7 +436,10 @@ public void Tick_Stats(){
 		data.LastHealth = ply.GetHealth();
 
 		// mana regeneration
-		if (data.Mana < 100 && Game.TotalElapsedGameTime >= data.LastUseTime + 2000f) data.Mana += 1;
+		if (Game.TotalElapsedGameTime >= data.LastUseTime + 2000f){
+			if (data.Mana <= (100f - MANA_REGEN_MULTIPLIER)) data.Mana += MANA_REGEN_MULTIPLIER;
+			else if (data.Mana < 100f) data.Mana = 100f;
+		}
 
 		// freezing
 		if (data.IsFrozen){
@@ -452,7 +457,7 @@ public void Tick_Stats(){
 }
 
 // remove objects and tiles that exceeded their lifetime
-public void Tick_Projectiles(){
+private void Tick_Projectiles(){
 	for(int i = projs.Count - 1; i >=0; i--){
 		if (projs[i].UnFreezeTime != 0f && projs[i].UnFreezeTime <= Game.TotalElapsedGameTime && projs[i].ProjObject.GetBodyType() == BodyType.Static)
 			projs[i].ProjObject.SetBodyType(BodyType.Dynamic);
@@ -470,7 +475,7 @@ public void Tick_Projectiles(){
 }
 
 // remove weapons from map and replace them with items in "replacingWeapons" (custom weapon spawning)
-public void Tick_Weapons(){
+private void Tick_Weapons(){
 	foreach(IObject obj in Game.GetObjectsByName(restrictedWeapons)){
 		if (rand.Next(2) == 0)
 			Game.CreateObject(
@@ -483,7 +488,7 @@ public void Tick_Weapons(){
 }
 
 // if timelimit is on, count down
-public void Tick_TimeLimit(){
+private void Tick_TimeLimit(){
 	if (TimeLimit_Check() && Game.GetSingleObjectByCustomId("HideSettingsTrigger") == null){
 		if (!m_twoOpponentsRemaining){
 			// start tracking time
@@ -514,7 +519,7 @@ public void Tick_TimeLimit(){
 }
 
 // check if timelimit should be activated now
-public bool TimeLimit_Check(){
+private bool TimeLimit_Check(){
 	if (TIME_LIMIT_MODE == "main") return true;
 	if (Game.GetActiveUsers().Length <= 2) return false;
 	else if (TIME_LIMIT_MODE == "auto"){
@@ -544,7 +549,7 @@ public bool TimeLimit_Check(){
 }
 
 // use player data to perform a spell and remove mana and set a cooldown
-public void SpellUsed(PlayerData data){
+private void SpellUsed(PlayerData data){
 	IPlayer ply = data.Player;
 
 	if (!UNLIMITED_MANA) data.Mana -= data.Books[data.BookId].Spells[data.SpellId].ManaCost;
@@ -910,7 +915,7 @@ public void SpellTrigger_MindControl(TriggerArgs args){
 	}
 }
 
-public void Tick_MindControl(){
+private void Tick_MindControl(){
 	for(int i = controlledPlayers.Count - 1; i >=0; i--){
 		MindControlData mindData = controlledPlayers[i];
 		PlayerData contData = mindData.ControllerData;
@@ -955,7 +960,9 @@ public void Tick_MindControl(){
 	}
 }
 
-public void CheckGameover(){
+private void CheckGameover(){
+	if (Game.GetActiveUsers().Length < 2) return;
+
 	List <PlayerTeam> teams = new List<PlayerTeam>();
 	String winner = "";
 
@@ -1003,7 +1010,7 @@ public void CheckGameover(){
 //============================< HELPERS >===========================//
 //==================================================================//
 
-public void ModMessage(string text){
+private void ModMessage(string text){
 	Game.RunCommand("/MSG #Wizards mod: " + text);
 }
 
@@ -1015,20 +1022,20 @@ private PlayerData GetPlayerData(IPlayer ply){
 	return new PlayerData(); 
 }
 
-public int GetPlayerDataIndex(IPlayer ply){
+private int GetPlayerDataIndex(IPlayer ply){
 	for(int i = players.Count -1; i>=0; i--)
 		if(ply == players[i].Player) return i;
 	return 0;
 }
 
-public bool UserStillHere(IUser user){
+private bool UserStillHere(IUser user){
 	foreach (IUser usr in Game.GetActiveUsers())
 		if (usr.UserId == user.UserId) return true;
 	return false;
 }
 
 // create timer trigger
-public void CreateTimer(int interval, int count, string method, string id) {
+private void CreateTimer(int interval, int count, string method, string id) {
 	IObjectTimerTrigger timerTrigger = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
 	timerTrigger.SetIntervalTime(interval);
 	timerTrigger.SetRepeatCount(count);
@@ -1037,7 +1044,7 @@ public void CreateTimer(int interval, int count, string method, string id) {
 	timerTrigger.Trigger();
 }
 
-public Color GetTeamColor(PlayerTeam team){
+private Color GetTeamColor(PlayerTeam team){
 	if (team == PlayerTeam.Team1) return new Color(124, 124, 246);
 	if (team == PlayerTeam.Team2) return new Color(245, 78, 78);
 	if (team == PlayerTeam.Team3) return new Color(5, 219, 5);
@@ -1045,39 +1052,39 @@ public Color GetTeamColor(PlayerTeam team){
 	return new Color(255, 255, 255);
 }
 
-public void GiveBasicSpells(PlayerData data){
+private void GiveBasicSpells(PlayerData data){
 	{	// destruction spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
-		temp.Add(new PlayerData.BookData.SpellData("FirePunch", 40, 1000f));
-		temp.Add(new PlayerData.BookData.SpellData("FireBall", 30, 1000f));
-		temp.Add(new PlayerData.BookData.SpellData("Paper", 25, 500f));
-		temp.Add(new PlayerData.BookData.SpellData("Crate of doom", 60, 10000f));
-		temp.Add(new PlayerData.BookData.SpellData("ANVIL", 25, 3000f));
-		temp.Add(new PlayerData.BookData.SpellData("SUICIDE", 0, 0f));
+		temp.Add(new PlayerData.BookData.SpellData("FirePunch", 40f, 1000f));
+		temp.Add(new PlayerData.BookData.SpellData("FireBall", 30f, 1000f));
+		temp.Add(new PlayerData.BookData.SpellData("Paper", 25f, 500f));
+		temp.Add(new PlayerData.BookData.SpellData("Crate of doom", 60f, 10000f));
+		temp.Add(new PlayerData.BookData.SpellData("ANVIL", 25f, 3000f));
+		temp.Add(new PlayerData.BookData.SpellData("SUICIDE", 0f, 0f));
 
 		data.Books.Add(new PlayerData.BookData("Destruction", temp));
 	}
 	{	// protection spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
-		temp.Add(new PlayerData.BookData.SpellData("Heal", 15, 500f));
-		temp.Add(new PlayerData.BookData.SpellData("Block", 25, 500f));
-		temp.Add(new PlayerData.BookData.SpellData("Shield", 75, 20000f));
-		temp.Add(new PlayerData.BookData.SpellData("Revive", 100, 30000f));
+		temp.Add(new PlayerData.BookData.SpellData("Heal", 15f, 500f));
+		temp.Add(new PlayerData.BookData.SpellData("Block", 25f, 500f));
+		temp.Add(new PlayerData.BookData.SpellData("Shield", 75f, 20000f));
+		temp.Add(new PlayerData.BookData.SpellData("Revive", 100f, 30000f));
 
 		data.Books.Add(new PlayerData.BookData("Protection", temp));
 	}
 	{	// alteration spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
-		temp.Add(new PlayerData.BookData.SpellData("FUS RO DAH", 75, 15000));
-		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 65, 8000f));
-		temp.Add(new PlayerData.BookData.SpellData("SuperJump", 30, 1000f));
+		temp.Add(new PlayerData.BookData.SpellData("FUS RO DAH", 75f, 15000));
+		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 65f, 8000f));
+		temp.Add(new PlayerData.BookData.SpellData("SuperJump", 30f, 1000f));
 
 		data.Books.Add(new PlayerData.BookData("Alteration", temp));
 	}
 	{	// controlling spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
-		temp.Add(new PlayerData.BookData.SpellData("Mind Lock", 100, 40000f));
-		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 150, 60000f));
+		temp.Add(new PlayerData.BookData.SpellData("Mind Lock", 100f, 40000f));
+		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 150f, 60000f));
 
 		data.Books.Add(new PlayerData.BookData("Controlling", temp));
 	}
