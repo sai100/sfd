@@ -16,7 +16,7 @@ private const bool TIME_LIMIT_ACTIVATED = true;		    			// set to "true" to remo
 private const int TIME_LIMIT_SECONDS = 90;			    			// choose the amount of time given to players to finish the round
 private const string TIME_LIMIT_MODE = "auto";			    		// set to "main": start timer at beginning; "auto": when 2 teams or 2 players left
 //===========================<utilites>=============================//
-private bool HOSTING_ACTIVATED = true;								// set to true to kill host at the beginning of each round.
+private bool HOSTING_ACTIVATED = false;								// set to true to kill host at the beginning of each round.
 //=========================<commentator>============================//
 //private bool COMMENTATOR_ACTIVATED = false;						// work in progress here
 //==================================================================//
