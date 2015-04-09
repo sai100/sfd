@@ -232,7 +232,7 @@ public void OnStartup(){
 		}
 
 		// some messages
-		ModMessage(modData.Version);
+		ModMessage("v" + modData.Version);
 		if (HOSTING_ACTIVATED) ModMessage("Host is AFK");
 		if (INSTAGIB_ON && INSTAGIB_RANDOM) ModMessage("INSTAGIB ROUND!");
 	} else {
