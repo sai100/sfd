@@ -551,7 +551,7 @@ private bool TimeLimit_Check(){
 // use player data to perform a spell and remove mana and set a cooldown
 private void SpellUsed(PlayerData data){
 	IPlayer ply = data.Player;
-	private bool usedNow = true;
+	bool usedNow = true;
 
 	switch(data.Books[data.BookId].Spells[data.SpellId].Name){
 	case "FirePunch":
