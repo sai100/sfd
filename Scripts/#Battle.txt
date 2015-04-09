@@ -1,6 +1,6 @@
 //==================================================================//
 //============<      #BATTLE GAMEMODE BY #OCTOTHORP     >===========//
-//============<                  V 1.1                  >===========//
+//============<                   v1.1                  >===========//
 //==================================================================//
 //=====================< OCTOBATTLE - settings >====================//
 //=============================<general>============================//
@@ -770,7 +770,7 @@ private void TypingMachine_Print(string reason, string[] args) {
 	timerTrigger.Trigger();
 }
 
-private void TypingMachine_AddLetter(TriggerArgs args) {
+public void TypingMachine_AddLetter(TriggerArgs args) {
 	if (currentChar < text.Length) {
 		currentChar ++;
 		Game.ShowPopupMessage(text.Substring(0, currentChar));
