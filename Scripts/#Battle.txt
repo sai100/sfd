@@ -30,6 +30,7 @@ private const bool REVIVE_CAPTURE_ENEMIES = true;		    		// set to "true" to all
 private const bool REVIVE_BLEEDING = true;			    			// set to "true" to make players bleed before death
 private const bool REVIVE_FINISH_PLAYERS = true;		    		// set to "true" to allow players finish people
 private const int REVIVE_FINISH_HEALTH = 20;			    		// health of unfinished player
+private const bool REVIVE_KILL_FALLEN_TO_GAMEOVER = true;			// set to "true" to end round only when all players are completely dead
 //========================<instagib mode>===========================//
 private const bool INSTAGIB_ACTIVATED = true;			    		// set to "true" to activate instagib mode
 private const bool INSTAGIB_RANDOM = true;			    			// set to "true" to make instagib randomly appear with selected chance
@@ -60,7 +61,7 @@ private const int EXPLODE_ON_DEATH_DELAY = 5;		    			// Time before the corpse 
 // general mod data
 public class ModData{
 	// we'll add something else later
-	public string Version = "1.1";
+	public string Version = "1.1a";
 }
 private ModData modData = new ModData();
 
@@ -327,6 +328,8 @@ public void Death(TriggerArgs args){
 		if (ply.GetUser() != null) TypingMachine_Print("death" , new string[] {ply.GetUser().Name});
 		else TypingMachine_Print("disconnect", new string[] {ply.GetProfile().Name});
 	}
+
+	CheckGameover();
 }
 
 // ============================= |
@@ -670,8 +673,12 @@ private void CheckGameover(){
 	List <PlayerTeam> teams = new List<PlayerTeam>();
 	String winner = "";
 
+	//if (Game.GetActiveUsers().Length < 2) return;
+
 	foreach (PlayerData data in players)
-		if (!data.Body.IsRemoved && !teams.Contains(data.Team)) teams.Add(data.Team);
+		if (!data.Body.IsRemoved && !teams.Contains(data.Team))
+			if (REVIVE_KILL_FALLEN_TO_GAMEOVER || (!REVIVE_KILL_FALLEN_TO_GAMEOVER && !data.Body.IsDead))
+				teams.Add(data.Team);
 
 	switch (teams.Count){
 		case 5:
@@ -690,17 +697,25 @@ private void CheckGameover(){
 					case PlayerTeam.Team4 : winner = "Yellow team"; break;
 				}
 			} else {
-				List <IPlayer> plysAlive = new List<IPlayer>();
-				foreach (IPlayer ply in Game.GetPlayers())
-					if (!ply.IsDead) plysAlive.Add(ply);
-				if (plysAlive.Count == 1)
-					winner = plysAlive[0].GetProfile().Name;
-				else return;
+				int plysAlive = 0;
+				int plysFallen = 0;
+				foreach (PlayerData data in players){
+					if (!data.Body.IsDead){
+						plysAlive ++;
+						if (winner == "") winner = data.Body.GetProfile().Name;
+					} else plysFallen ++;
+				}
+
+				int plys = 0;
+				if (REVIVE_KILL_FALLEN_TO_GAMEOVER) plys = plysAlive + plysFallen;
+				else plys = plysAlive;
+
+				if (plys > 1) return;
 			}
 			Game.SetGameOver(winner + " wins!");
 			break;
 		case 0:
-			Game.SetGameOver("Draw");
+			Game.SetGameOver("Draw!");
 			break;
 	}
 }
