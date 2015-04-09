@@ -806,7 +806,7 @@ private void TypingMachine_Stop(){
 	timerTrigger.Trigger();
 }
 
-private void TypingMachine_Clear(TriggerArgs args){
+public void TypingMachine_Clear(TriggerArgs args){
 	Game.HidePopupMessage();
 }
 
