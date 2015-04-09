@@ -1,6 +1,6 @@
 //==================================================================//
 //============<    #WIZARDS GAMEMODE BY #OCTOTHORP    >=============//
-//============<                  v1.0                 >=============//
+//============<                  v1.1                 >=============//
 //==================================================================//
 //=====================< #WIZARDS - settings >======================//
 //============================<general>=============================//
@@ -31,7 +31,7 @@ private bool HOSTING_ACTIVATED = false;								// set to true to kill host at th
 // general mod data
 private class ModData{
 	// we'll add something else later
-	public string Version = "1.0";
+	public string Version = "1.1 (testing)";
 }
 private ModData modData = new ModData();
 
@@ -551,10 +551,7 @@ private bool TimeLimit_Check(){
 // use player data to perform a spell and remove mana and set a cooldown
 private void SpellUsed(PlayerData data){
 	IPlayer ply = data.Player;
-
-	if (!UNLIMITED_MANA) data.Mana -= data.Books[data.BookId].Spells[data.SpellId].ManaCost;
-	if (MANA_COOLDOWN_ACTIVATED) data.LastUseTime = Game.TotalElapsedGameTime;
-	if (SPELL_COOLDOWN_ACTIVATED) data.Books[data.BookId].Spells[data.SpellId].LastUseTime = Game.TotalElapsedGameTime;
+	private bool usedNow = true;
 
 	switch(data.Books[data.BookId].Spells[data.SpellId].Name){
 	case "FirePunch":
@@ -615,7 +612,7 @@ private void SpellUsed(PlayerData data){
 		{
 			float healAmount = 6f;
 			if (ply.GetHealth() >= 50f){
-				data.Mana += data.Books[data.BookId].Spells[data.SpellId].ManaCost;
+				usedNow = false;
 				Game.PlayEffect("PWT", ply.GetWorldPosition(), "Health full!");
 			} else if (ply.GetHealth() > 50f - healAmount)
 				data.AddedHealth += 50f - ply.GetHealth();
@@ -767,6 +764,10 @@ private void SpellUsed(PlayerData data){
 		Game.PlayEffect("PWT", ply.GetWorldPosition(), "SHIT, ERROR!!!");
 		break;
 	}
+
+	if (!UNLIMITED_MANA && usedNow) data.Mana -= data.Books[data.BookId].Spells[data.SpellId].ManaCost;
+	if (MANA_COOLDOWN_ACTIVATED) data.LastUseTime = Game.TotalElapsedGameTime;
+	if (SPELL_COOLDOWN_ACTIVATED) data.Books[data.BookId].Spells[data.SpellId].LastUseTime = Game.TotalElapsedGameTime;
 }
 
 // | these methods are used by spells
