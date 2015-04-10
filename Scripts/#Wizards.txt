@@ -134,14 +134,14 @@ private class ProjData {
 }
 
 // used by mind control spell
-private class MindControlData {
+private class SpellsData_MindControl {
 	public IPlayer Player = null;
 	public IUser User = null;
 	public PlayerData ControllerData = new PlayerData();
 	public float EndTime = 0f;
 	public float ControllerHealth = 50f;
 
-	public MindControlData (IPlayer ply, IUser user, PlayerData contr, float endTime, float health){
+	public SpellsData_MindControl (IPlayer ply, IUser user, PlayerData contr, float endTime, float health){
 		this.Player = ply;
 		this.User = user;
 		this.ControllerData = contr;
@@ -150,11 +150,25 @@ private class MindControlData {
 	}
 }
 
+private class SpellsData_Teleport {
+	public IPlayer Player = null;
+	public IObject Trigger = null;
+	public Vector2 Position = Vector2.Zero;
+	public bool Allowed = true;
+
+	public SpellsData_Teleport (IPlayer ply, IObject trig){
+		this.Player = ply;
+		this.Trigger = trig;
+		this.Position = trig.GetWorldPosition();
+	}
+}
+
 Random rand = new Random();
 
 private List<PlayerData> players = new List<PlayerData>();
 private List<ProjData> projs = new List<ProjData>();
-private List<MindControlData> controlledPlayers = new List<MindControlData>();
+private List<SpellsData_MindControl> controlledPlayers = new List<SpellsData_MindControl>();
+private List<SpellsData_Teleport> pendingTeleports = new List<SpellsData_Teleport>();
 
 // time limit vars
 private float m_startTime = 0;
@@ -275,16 +289,17 @@ public void Death(TriggerArgs args){
 
 public void FastTick(TriggerArgs args){
 	Tick_Display();
+	Tick_Spell_Teleport();
 }
 
 public void MidTick(TriggerArgs args){
 	Tick_Stats();
 	Tick_Controls();
+	Tick_Projectiles();
 }
 
 public void SlowTick(TriggerArgs args){
-	Tick_Projectiles();
-	Tick_MindControl();
+	Tick_Spell_MindControl();
 	Tick_PopupMessage();
 	if (!ALLOW_WEAPONS) Tick_Weapons();
 }
@@ -744,17 +759,16 @@ private void SpellUsed(PlayerData data){
 		break;
 	case "Teleport":
 		{
-			Vector2 pos = ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 50, 4f);
+			Vector2 pos = ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 70f, 10f);
 			IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
 				"AreaTrigger",
-				Vector2.Zero,
+				pos,
 				0
 			));
-			for (int j = 0; j < 15; j++) Game.PlayEffect("TR_D", pos + new Vector2(rand.Next(-6,6), rand.Next(-6,6)));
+			pendingTeleports.Add(new SpellsData_Teleport(ply, areaTrigger));
 			areaTrigger.SetScriptMethod("SpellTrigger_Teleport");
-			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 100f, false));
-			areaTrigger.SetWorldPosition(pos);
-			//Game.PlayEffect("CAM_S", Vector2.Zero, 1f, 500f, true);
+			areaTrigger.SetBodyType(BodyType.Dynamic);
+			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 50f, false));
 		}
 		break;
 	case "SUICIDE":
@@ -913,13 +927,13 @@ public void SpellTrigger_MindControl(TriggerArgs args){
 	if (args.Sender is IPlayer){
 		IPlayer body = (IPlayer)args.Sender;
 
-		foreach (MindControlData data in controlledPlayers)
+		foreach (SpellsData_MindControl data in controlledPlayers)
 			if (data.Player == body) return;
 
 		if (!body.IsDead && Game.TotalElapsedGameTime > m_nextMindControl && body != m_mindController.Player){
 			foreach (IObject obj in Game.GetObjectsByCustomId("MindControlTrigger")) obj.Remove();
 
-			controlledPlayers.Add(new MindControlData(body, body.GetUser(), m_mindController, Game.TotalElapsedGameTime + 7000f, m_mindController.Player.GetHealth()));
+			controlledPlayers.Add(new SpellsData_MindControl(body, body.GetUser(), m_mindController, Game.TotalElapsedGameTime + 7000f, m_mindController.Player.GetHealth()));
 
 			Game.PlayEffect("Electric", body.GetWorldPosition() + new Vector2(0, 8f));
 			Game.PlayEffect("Electric", m_mindController.Player.GetWorldPosition() + new Vector2(0, 8f));
@@ -934,9 +948,9 @@ public void SpellTrigger_MindControl(TriggerArgs args){
 	}
 }
 
-private void Tick_MindControl(){
+private void Tick_Spell_MindControl(){
 	for(int i = controlledPlayers.Count - 1; i >=0; i--){
-		MindControlData mindData = controlledPlayers[i];
+		SpellsData_MindControl mindData = controlledPlayers[i];
 		PlayerData contData = mindData.ControllerData;
 		IPlayer victPlayer = mindData.Player;
 		IUser victUser = mindData.User;
@@ -982,8 +996,34 @@ private void Tick_MindControl(){
 public void SpellTrigger_Teleport(TriggerArgs args){
 	if (args.Sender is IObject){
 		IObject obj = (IObject)args.Sender;
+		IObject trig = (IObject)args.Caller;
 
-		Game.PlayEffect("PWT", obj.GetWorldPosition(), obj.Name);
+		if (!obj.Name.StartsWith("Bg")){
+			for(int i = pendingTeleports.Count - 1; i >= 0; i--){
+				if (pendingTeleports[i].Trigger == trig){
+					pendingTeleports[i].Trigger.Remove();
+					pendingTeleports[i].Allowed = false;
+					Game.PlayEffect("PWT", pendingTeleports[i].Player.GetWorldPosition(), "Can't teleport");
+					for (int j = 0; j < 15; j++) Game.PlayEffect("TR_D", pendingTeleports[i].Position + new Vector2(rand.Next(-6,6), rand.Next(-6,6)));
+				}
+			}
+		}
+	}
+}
+
+private void Tick_Spell_Teleport(){
+	for(int i = pendingTeleports.Count - 1; i >= 0; i--){
+		SpellsData_Teleport data = pendingTeleports[i];
+
+		if (data.Trigger.IsRemoved){
+			if (data.Allowed){
+				Game.PlayEffect("Electric", data.Player.GetWorldPosition() + new Vector2(0, 8f));
+				data.Player.SetWorldPosition(data.Position);
+				Game.PlayEffect("Electric", data.Player.GetWorldPosition() + new Vector2(0, 8f));
+				players[GetPlayerDataIndex(data.Player)].NextUseTime = Game.TotalElapsedGameTime + 2000f;
+			}
+			pendingTeleports.RemoveAt(i);
+		}
 	}
 }
 
@@ -996,7 +1036,7 @@ private void CheckGameover(){
 	foreach (PlayerData data in players)
 		if (!data.Player.IsRemoved && !data.Player.IsDead && !teams.Contains(data.Team)) teams.Add(data.Team);
 	
-	foreach (MindControlData MindData in controlledPlayers){
+	foreach (SpellsData_MindControl MindData in controlledPlayers){
 		PlayerData contData = MindData.ControllerData;
 		if (UserStillHere(contData.User) && !teams.Contains(contData.Team)) teams.Add(contData.Team);
 	}
@@ -1105,7 +1145,7 @@ private void GiveBasicSpells(PlayerData data){
 		temp.Add(new PlayerData.BookData.SpellData("FUS RO DAH", 75f, 15000));
 		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 65f, 8000f));
 		temp.Add(new PlayerData.BookData.SpellData("SuperJump", 30f, 1000f));
-		temp.Add(new PlayerData.BookData.SpellData("Teleport", 5f, 1000f));
+		temp.Add(new PlayerData.BookData.SpellData("Teleport", 80f, 1000f));
 
 		data.Books.Add(new PlayerData.BookData("Alteration", temp));
 	}
