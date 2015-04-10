@@ -741,18 +741,18 @@ private void SpellUsed(PlayerData data){
 		break;
 	case "SuperJump":
 		{
-			//ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
-			//for (int i = 0; i <= 2; i++){
+			ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
 			if (!ply.IsInMidAir){
-				IObject obj = Game.CreateObject("InvisiblePlatform",
-					ply.GetWorldPosition() + new Vector2(0f, -8f),
-					0);
-				obj.SetBodyType(BodyType.Dynamic);
-				obj.SetLinearVelocity(new Vector2(0, 20f));
-				obj.SetAngularVelocity((-1) * ply.FacingDirection * 5f);
-				projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f, false));
-				for (int j = 0; j < 18; j++) Game.PlayEffect("TR_D", ply.GetWorldPosition() + new Vector2(rand.Next(-12,12), rand.Next(-2,2)));
-			//}
+				//for (int i = 0; i <= 2; i++){
+					IObject obj = Game.CreateObject("InvisiblePlatform",
+						ply.GetWorldPosition() + new Vector2(0f, -8f),
+						0);
+					obj.SetBodyType(BodyType.Dynamic);
+					obj.SetLinearVelocity(new Vector2(0, 13f));
+					obj.SetAngularVelocity((-1) * ply.FacingDirection * 4f);
+					projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f, false));
+					for (int j = 0; j < 18; j++) Game.PlayEffect("TR_D", ply.GetWorldPosition() + new Vector2(rand.Next(-12,12), rand.Next(-2,2)));
+				//}
 			Game.PlayEffect("CAM_S", Vector2.Zero, 1f, 500f, true);
 			}
 			else Game.PlayEffect("PWT", ply.GetWorldPosition(), "I can't reach the ground!");
