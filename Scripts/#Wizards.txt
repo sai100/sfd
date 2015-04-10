@@ -742,6 +742,21 @@ private void SpellUsed(PlayerData data){
 			else Game.PlayEffect("PWT", ply.GetWorldPosition(), "I can't reach the ground!");
 		}
 		break;
+	case "Teleport":
+		{
+			Vector2 pos = ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 50, 4f);
+			IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
+				"AreaTrigger",
+				Vector2.Zero,
+				0
+			));
+			for (int j = 0; j < 15; j++) Game.PlayEffect("TR_D", pos + new Vector2(rand.Next(-6,6), rand.Next(-6,6)));
+			areaTrigger.SetScriptMethod("SpellTrigger_Teleport");
+			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 100f, false));
+			areaTrigger.SetWorldPosition(pos);
+			//Game.PlayEffect("CAM_S", Vector2.Zero, 1f, 500f, true);
+		}
+		break;
 	case "SUICIDE":
 		for (int i = 0; i < 5; i++) Game.TriggerExplosion(ply.GetWorldPosition() + new Vector2(rand.Next(-40, 40), rand.Next(-40, 40)));
 		ply.Gib();
@@ -964,6 +979,14 @@ private void Tick_MindControl(){
 	}
 }
 
+public void SpellTrigger_Teleport(TriggerArgs args){
+	if (args.Sender is IObject){
+		IObject obj = (IObject)args.Sender;
+
+		Game.PlayEffect("PWT", obj.GetWorldPosition(), obj.Name);
+	}
+}
+
 private void CheckGameover(){
 	if (Game.GetActiveUsers().Length < 2) return;
 
@@ -1082,6 +1105,7 @@ private void GiveBasicSpells(PlayerData data){
 		temp.Add(new PlayerData.BookData.SpellData("FUS RO DAH", 75f, 15000));
 		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 65f, 8000f));
 		temp.Add(new PlayerData.BookData.SpellData("SuperJump", 30f, 1000f));
+		temp.Add(new PlayerData.BookData.SpellData("Teleport", 5f, 1000f));
 
 		data.Books.Add(new PlayerData.BookData("Alteration", temp));
 	}
