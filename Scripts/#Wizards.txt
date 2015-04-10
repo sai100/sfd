@@ -7,7 +7,7 @@
 private bool ALLOW_WEAPONS = false;									// set to true to allow guns and throwables
 private bool UNLIMITED_MANA = false;								// set to true to get unlimited mana (unstable now)
 private bool MANA_REGEN = true;										// set to true to make mana regenerate with time
-private float MANA_MAX = (float) 100;								// change "peak" mana amount to regenerate to
+private float MANA_MAX = (float) 250;								// change "peak" mana amount to regenerate to
 private float MANA_REGEN_MULTIPLIER = (float) 1.5;					// change the amount of regenerated mana
 private bool SPELL_COOLDOWN_ACTIVATED = false;						// set to true to enable spells cooldown
 private bool MANA_COOLDOWN_ACTIVATED = true;						// set to true to enable mana regeneration cooldown after spell use
@@ -61,6 +61,7 @@ private string [] ONSTART_TEXT = new string []{
 private class PlayerData {
 	public IUser User = null;
 	public IPlayer Player = null;
+	public bool MagicMode = true;
 
 	public float Mana = 0f;
 	public int SpellId = 0;
@@ -368,65 +369,88 @@ private void Tick_Controls(){
 		PlayerData data = players[i];
 		IPlayer ply = data.Player;
 
-		// book changing
-		if (ply.IsBlocking && ply.IsWalking && data.NextUseTime <= Game.TotalElapsedGameTime){
-			if (ply.FacingDirection == 1)
-				// start from beginning if it's the end
-				if (data.BookId == data.Books.Count - 1) data.BookId = 0;
-				else data.BookId ++;
-			else if (ply.FacingDirection == -1)
-				if (data.BookId == 0) data.BookId = data.Books.Count - 1;
-				else data.BookId --;
-			// set spell id to 0 to prevent "index out of bounds"
-			data.SpellId = 0;
-			// show information of chosen book
-			Game.PlayEffect(
-				"PWT",
-				ply.GetWorldPosition(),
-				data.Books[data.BookId].Name + " book"
-			);
-			// "multiple uses in one time"-protection
-			data.NextUseTime = Game.TotalElapsedGameTime + 500f;
-		}
-
-		// spell changing 
-		else if (ply.IsBlocking && !ply.IsWalking && data.NextUseTime <= Game.TotalElapsedGameTime){
-			if (ply.FacingDirection == 1)
-				if (data.SpellId == data.Books[data.BookId].Spells.Count - 1) data.SpellId = 0;
-				else data.SpellId ++;
-			else if (ply.FacingDirection == -1)
-				if (data.SpellId == 0) data.SpellId = data.Books[data.BookId].Spells.Count - 1;
-				else data.SpellId --;
-			// show information of chosen spell
-			Game.PlayEffect(
-				"PWT",
-				ply.GetWorldPosition(),
-				data.Books[data.BookId].Spells[data.SpellId].Name +
-					" (" + ((int)data.Books[data.BookId].Spells[data.SpellId].ManaCost).ToString() + //", " +
-					/*(data.Books[data.BookId].Spells[data.SpellId].Cooldown / 1000f).ToString().Replace(",", ".") +*/ ")"
-			);
-			// "multiple uses in one time"-protection
-			data.NextUseTime = Game.TotalElapsedGameTime + 500f;
-		}
-
-		// spell using
-		if ((ply.IsMeleeAttacking || ply.IsJumpAttacking) && (data.NextUseTime <= Game.TotalElapsedGameTime) && Game.TotalElapsedGameTime > 4000f){
-			PlayerData.BookData.SpellData spellData = data.Books[data.BookId].Spells[data.SpellId];
-			if (spellData.LastUseTime + spellData.Cooldown <= Game.TotalElapsedGameTime){
-				if (data.Mana >= spellData.ManaCost) SpellUsed(data);
-				// insufficient mana
-				else Game.PlayEffect("PWT", ply.GetWorldPosition(), "No mana");
+		if ((ply.IsCrouching || ply.IsRolling) && ply.IsWalking && data.NextUseTime <= Game.TotalElapsedGameTime){
+			if (data.MagicMode){
+				data.MagicMode = false;
+				Game.PlayEffect(
+					"PWT",
+					ply.GetWorldPosition(),
+					"No spell"
+				);
 			} else {
-				// cooldown is active
-				int cooldownLeft = ((int)(((spellData.LastUseTime + spellData.Cooldown) - Game.TotalElapsedGameTime + 500f) / 1000));
-				if (cooldownLeft > 0)
-					Game.PlayEffect("PWT",
-						ply.GetWorldPosition(),
-						cooldownLeft.ToString() + " sec"
-						);
+				data.MagicMode = true;
+				Game.PlayEffect(
+					"PWT",
+					ply.GetWorldPosition(),
+					data.Books[data.BookId].Spells[data.SpellId].Name +
+						" (" + ((int)data.Books[data.BookId].Spells[data.SpellId].ManaCost).ToString() + //", " +
+						/*(data.Books[data.BookId].Spells[data.SpellId].Cooldown / 1000f).ToString().Replace(",", ".") +*/ ")"
+				);
 			}
-			// "multiple uses in one time"-protection
-			data.NextUseTime = Game.TotalElapsedGameTime + 500f;
+			data.NextUseTime = Game.TotalElapsedGameTime + 500f; 
+		}
+
+		if (data.MagicMode){
+			// book changing
+			if (ply.IsBlocking && ply.IsWalking && data.NextUseTime <= Game.TotalElapsedGameTime){
+				if (ply.FacingDirection == 1)
+					// start from beginning if it's the end
+					if (data.BookId == data.Books.Count - 1) data.BookId = 0;
+					else data.BookId ++;
+				else if (ply.FacingDirection == -1)
+					if (data.BookId == 0) data.BookId = data.Books.Count - 1;
+					else data.BookId --;
+				// set spell id to 0 to prevent "index out of bounds"
+				data.SpellId = 0;
+				// show information of chosen book
+				Game.PlayEffect(
+					"PWT",
+					ply.GetWorldPosition(),
+					data.Books[data.BookId].Name + " book"
+				);
+				// "multiple uses in one time"-protection
+				data.NextUseTime = Game.TotalElapsedGameTime + 500f;
+			}
+
+			// spell changing 
+			else if (ply.IsBlocking && !ply.IsWalking && data.NextUseTime <= Game.TotalElapsedGameTime){
+				if (ply.FacingDirection == 1)
+					if (data.SpellId == data.Books[data.BookId].Spells.Count - 1) data.SpellId = 0;
+					else data.SpellId ++;
+				else if (ply.FacingDirection == -1)
+					if (data.SpellId == 0) data.SpellId = data.Books[data.BookId].Spells.Count - 1;
+					else data.SpellId --;
+				// show information of chosen spell
+				Game.PlayEffect(
+					"PWT",
+					ply.GetWorldPosition(),
+					data.Books[data.BookId].Spells[data.SpellId].Name +
+						" (" + ((int)data.Books[data.BookId].Spells[data.SpellId].ManaCost).ToString() + //", " +
+						/*(data.Books[data.BookId].Spells[data.SpellId].Cooldown / 1000f).ToString().Replace(",", ".") +*/ ")"
+				);
+				// "multiple uses in one time"-protection
+				data.NextUseTime = Game.TotalElapsedGameTime + 500f;
+			}
+
+			// spell using
+			if ((ply.IsMeleeAttacking || ply.IsJumpAttacking) && (data.NextUseTime <= Game.TotalElapsedGameTime) && Game.TotalElapsedGameTime > 4000f){
+				PlayerData.BookData.SpellData spellData = data.Books[data.BookId].Spells[data.SpellId];
+				if (spellData.LastUseTime + spellData.Cooldown <= Game.TotalElapsedGameTime){
+					if (data.Mana >= spellData.ManaCost) SpellUsed(data);
+					// insufficient mana
+					else Game.PlayEffect("PWT", ply.GetWorldPosition(), "No mana");
+				} else {
+					// cooldown is active
+					int cooldownLeft = ((int)(((spellData.LastUseTime + spellData.Cooldown) - Game.TotalElapsedGameTime + 500f) / 1000));
+					if (cooldownLeft > 0)
+						Game.PlayEffect("PWT",
+							ply.GetWorldPosition(),
+							cooldownLeft.ToString() + " sec"
+							);
+				}
+				// "multiple uses in one time"-protection
+				data.NextUseTime = Game.TotalElapsedGameTime + 500f;
+			}
 		}
 	}
 }
@@ -596,7 +620,7 @@ private void SpellUsed(PlayerData data){
 			pos,
 			0f,
 			new Vector2(ply.FacingDirection * 15, 3),
-			(float)rand.Next(-200, 200));
+			(float)rand.Next(-50, 50));
 			for (int i = 0; i < 15; i++) Game.PlayEffect("TR_D",pos + new Vector2(rand.Next(-6,6), rand.Next(-6,6)));
 			projs.Add(new ProjData(proj, Game.TotalElapsedGameTime + 8000f, false));
 		}
@@ -1062,6 +1086,10 @@ private void CheckGameover(){
 				List <IPlayer> plysAlive = new List<IPlayer>();
 				foreach (IPlayer ply in Game.GetPlayers())
 					if (!ply.IsDead) plysAlive.Add(ply);
+				foreach (SpellsData_MindControl MindData in controlledPlayers){
+					PlayerData contData = MindData.ControllerData;
+					if (UserStillHere(contData.User)) plysAlive.Add(contData.Player);
+				}
 				if (plysAlive.Count == 1)
 					winner = plysAlive[0].GetProfile().Name;
 				else return;
@@ -1127,7 +1155,7 @@ private void GiveBasicSpells(PlayerData data){
 		temp.Add(new PlayerData.BookData.SpellData("FireBall", 30f, 1000f));
 		temp.Add(new PlayerData.BookData.SpellData("Paper", 25f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Crate of doom", 60f, 10000f));
-		temp.Add(new PlayerData.BookData.SpellData("ANVIL", 25f, 3000f));
+		temp.Add(new PlayerData.BookData.SpellData("ANVIL", 40f, 3000f));
 		temp.Add(new PlayerData.BookData.SpellData("SUICIDE", 0f, 0f));
 
 		data.Books.Add(new PlayerData.BookData("Destruction", temp));
@@ -1143,7 +1171,7 @@ private void GiveBasicSpells(PlayerData data){
 	}
 	{	// alteration spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
-		temp.Add(new PlayerData.BookData.SpellData("FUS RO DAH", 75f, 15000));
+		temp.Add(new PlayerData.BookData.SpellData("FUS RO DAH", 90f, 15000));
 		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 65f, 8000f));
 		temp.Add(new PlayerData.BookData.SpellData("SuperJump", 30f, 1000f));
 		temp.Add(new PlayerData.BookData.SpellData("Teleport", 80f, 1000f));
