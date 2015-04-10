@@ -7,6 +7,7 @@
 private bool ALLOW_WEAPONS = false;									// set to true to allow guns and throwables
 private bool UNLIMITED_MANA = false;								// set to true to get unlimited mana (unstable now)
 private bool MANA_REGEN = true;										// set to true to make mana regenerate with time
+private float MANA_MAX = (float) 100;								// change "peak" mana amount to regenerate to
 private float MANA_REGEN_MULTIPLIER = (float) 1.5;					// change the amount of regenerated mana
 private bool SPELL_COOLDOWN_ACTIVATED = false;						// set to true to enable spells cooldown
 private bool MANA_COOLDOWN_ACTIVATED = true;						// set to true to enable mana regeneration cooldown after spell use
@@ -237,7 +238,7 @@ public void OnStartup(){
 		Game.SetMapType(MapType.Custom);
 		// give each player a set of spells
 		foreach(IPlayer ply in Game.GetPlayers()) 
-			if (ply.GetUser() != null) players.Add(new PlayerData(ply.GetUser(), ply, 100));
+			if (ply.GetUser() != null) players.Add(new PlayerData(ply.GetUser(), ply, MANA_MAX));
 		foreach (PlayerData data in players)
 			GiveBasicSpells(data);
 
@@ -336,11 +337,11 @@ private void Tick_Display(){
 		float mana = data.Mana;
 
 		// show mana only when it doesn't equal 100 or while player isn't dead (create new text label)
-		if (!data.Player.IsDead && mana != 100f && data.Label == null){
+		if (!data.Player.IsDead && mana != MANA_MAX && data.Label == null){
 			IObjectText labelNew = (IObjectText)Game.CreateObject("Text", Vector2.Zero, 0f);
 			labelNew.SetTextColor(GetTeamColor(ply.GetTeam()));
 			data.Label = labelNew;
-		} else if ((mana == 100f || data.Player.IsDead) && data.Label != null){
+		} else if ((mana == MANA_MAX || data.Player.IsDead) && data.Label != null){
 			data.Label.Remove();
 			data.Label = null;
 		}
@@ -352,7 +353,7 @@ private void Tick_Display(){
 			// show mana as bar
 			/*string filling = "";
 			for (int j = 1; j <= 6; j++)
-				if (((float)j / 6f) <= ((float)(data.Mana)) / 100f) filling += "=";
+				if (((float)j / 6f) <= ((float)(data.Mana)) / MANA_MAX) filling += "=";
 				else filling += "  ";
 			data.Label.SetText("[" + filling + "]");*/
 
@@ -452,8 +453,8 @@ private void Tick_Stats(){
 
 		// mana regeneration
 		if (Game.TotalElapsedGameTime >= data.LastUseTime + 2000f){
-			if (data.Mana <= (100f - MANA_REGEN_MULTIPLIER)) data.Mana += MANA_REGEN_MULTIPLIER;
-			else if (data.Mana < 100f) data.Mana = 100f;
+			if (data.Mana <= (MANA_MAX - MANA_REGEN_MULTIPLIER)) data.Mana += MANA_REGEN_MULTIPLIER;
+			else if (data.Mana < MANA_MAX) data.Mana = MANA_MAX;
 		}
 
 		// freezing
