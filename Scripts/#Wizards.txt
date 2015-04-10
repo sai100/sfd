@@ -765,9 +765,9 @@ private void SpellUsed(PlayerData data){
 		break;
 	case "SuperJump":
 		{
-			ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
 			if (!ply.IsInMidAir){
 				//for (int i = 0; i <= 2; i++){
+					ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
 					IObject obj = Game.CreateObject("InvisiblePlatform",
 						ply.GetWorldPosition() + new Vector2(0f, -8f),
 						0);
