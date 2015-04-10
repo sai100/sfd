@@ -4,10 +4,9 @@
 //==================================================================//
 //=====================< #WIZARDS - settings >======================//
 //============================<general>=============================//
-private bool ALLOW_WEAPONS = false;									// set to true to allow guns and throwables
 private bool UNLIMITED_MANA = false;								// set to true to get unlimited mana (unstable now)
 private bool MANA_REGEN = true;										// set to true to make mana regenerate with time
-private float MANA_MAX = (float) 250;								// change "peak" mana amount to regenerate to
+private float MANA_MAX = (float) 100;								// change "peak" mana amount to regenerate to
 private float MANA_REGEN_MULTIPLIER = (float) 1.5;					// change the amount of regenerated mana
 private bool SPELL_COOLDOWN_ACTIVATED = false;						// set to true to enable spells cooldown
 private bool MANA_COOLDOWN_ACTIVATED = true;						// set to true to enable mana regeneration cooldown after spell use
@@ -192,18 +191,16 @@ string[] restrictedWeapons = new string[]{
 	"WPNPUMPSHOTGUN",
 	"WPNKATANA",
 	"WPNPIPEWRENCH",
+	"WPNUZI",
 	"WPNTOMMYGUN",
-	"WPNM60",
 	"WPNMACHETE",
 	"WPNSNIPERRIFLE",
 	"WPNSAWEDOFF",
 	"WPNBAT",
-	"WPNUZI",
 	"ITEMLASERSIGHT",
 	"WPNBAZOOKA",
 	"WPNAXE",
 	"WPNASSAULTRIFLE",
-	"WPNGRENADES",
 	"WPNLAZER",
 	"WPNCARBINE",
 	"WPNMOLOTOVS",
@@ -212,10 +209,15 @@ string[] restrictedWeapons = new string[]{
 	"WPNREVOLVER",
 	"WPNGRENADELAUNCHER",
 	"WPNSMG",
-	"WPNSUBMACHINEGUN",
-	"WPNHAMMER",
 	"WPNGRENADESTHROWN",
 	"WPNMOLOTOVSTHROWN"
+};
+// additional array for weapons that can be dropped so players could not "generate pickups"
+string[] restrictedWeapons2 = new string[]{
+	"WPNHAMMER",
+	"WPNSUBMACHINEGUN",
+	"WPNM60",
+	"WPNGRENADES"
 };
 string[] replacingWeapons = new string[]{
 	"ITEMSLOMO5",
@@ -267,7 +269,7 @@ public void OnStartup(){
 		// some messages
 		ModMessage("v" + modData.Version);
 		if (HOSTING_ACTIVATED) ModMessage("Host is AFK");
-		Game.ShowPopupMessage("Controls:\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=WALKING] + [KEY=BLOCK_AIM] - change spellbook\n([KEY=AIM_RUN_LEFT]/[KEY=AIM_RUN_RIGHT]) + [KEY=BLOCK_AIM] - change spell\n[KEY=ATTACK] - use spell\n", new Color(100,220,255));
+		Game.ShowPopupMessage("Controls:\n[KEY=ATTACK] - use spell\n[KEY=BLOCK_AIM] - change spell\n[KEY=DRAW_MELEE], [KEY=DRAW_HANDGUN], [KEY=DRAW_RIFLE], [KEY=DRAW_GRENADE] - change spellbook\n[KEY=WALKING] + [KEY=BLOCK_AIM] - toggle spell using\n", new Color(100,220,255));
 	} else {
 		ModMessage("This map is restricted.");
 	}
@@ -303,7 +305,7 @@ public void MidTick(TriggerArgs args){
 public void SlowTick(TriggerArgs args){
 	Tick_Spell_MindControl();
 	Tick_PopupMessage();
-	if (!ALLOW_WEAPONS) Tick_Weapons();
+	Tick_Weapons();
 }
 
 public void VerySlowTick(TriggerArgs args){
@@ -369,7 +371,8 @@ private void Tick_Controls(){
 		PlayerData data = players[i];
 		IPlayer ply = data.Player;
 
-		if ((ply.IsCrouching || ply.IsRolling) && ply.IsWalking && data.NextUseTime <= Game.TotalElapsedGameTime){
+		// toggle spells mode
+		if (ply.IsBlocking && ply.IsWalking && data.NextUseTime <= Game.TotalElapsedGameTime){
 			if (data.MagicMode){
 				data.MagicMode = false;
 				Game.PlayEffect(
@@ -390,9 +393,47 @@ private void Tick_Controls(){
 			data.NextUseTime = Game.TotalElapsedGameTime + 500f; 
 		}
 
+		// book changing
+		bool bookChanged = false;
+		// if player is choosing weapon, remove it and add back to prevent from getting it in hands
+		if (!ply.IsDead){
+			if (ply.CurrentWeaponDrawn == WeaponItemType.Handgun){
+				data.BookId = 2;
+				ply.RemoveWeaponItemType(WeaponItemType.Handgun);
+				bookChanged = true;
+			} else if (ply.CurrentWeaponDrawn == WeaponItemType.Rifle){
+				data.BookId = 1;
+				ply.RemoveWeaponItemType(WeaponItemType.Rifle);
+				bookChanged = true;
+			} else if (ply.CurrentWeaponDrawn == WeaponItemType.Thrown){
+				data.BookId = 3;
+				ply.RemoveWeaponItemType(WeaponItemType.Thrown);
+				bookChanged = true;
+			} else if (ply.CurrentWeaponDrawn == WeaponItemType.Melee){
+				data.BookId = 0;
+				ply.RemoveWeaponItemType(WeaponItemType.Melee);
+				bookChanged = true;
+			}
+
+			if (ply.CurrentMeleeWeapon.WeaponItem == WeaponItem.NONE) ply.GiveWeaponItem(WeaponItem.HAMMER);
+			else if (ply.CurrentPrimaryWeapon.WeaponItem == WeaponItem.NONE) ply.GiveWeaponItem(WeaponItem.SMG);
+			else if (ply.CurrentSecondaryWeapon.WeaponItem == WeaponItem.NONE) ply.GiveWeaponItem(WeaponItem.UZI);
+			else if (ply.CurrentThrownItem.WeaponItem == WeaponItem.NONE) ply.GiveWeaponItem(WeaponItem.GRENADES);
+		}
+
+		// display a book name and reset spell id to prevent "index out of bounds"
+		if (bookChanged){
+			data.SpellId = 0;
+			Game.PlayEffect(
+				"PWT",
+				ply.GetWorldPosition() + new Vector2(0f, 2f),
+				data.Books[data.BookId].Name + " book"
+			);
+		}
+
+		// if spells mode is on
 		if (data.MagicMode){
-			// book changing
-			if (ply.IsBlocking && ply.IsWalking && data.NextUseTime <= Game.TotalElapsedGameTime){
+			/*if (ply.IsBlocking && ply.IsWalking && data.NextUseTime <= Game.TotalElapsedGameTime){
 				if (ply.FacingDirection == 1)
 					// start from beginning if it's the end
 					if (data.BookId == data.Books.Count - 1) data.BookId = 0;
@@ -401,19 +442,13 @@ private void Tick_Controls(){
 					if (data.BookId == 0) data.BookId = data.Books.Count - 1;
 					else data.BookId --;
 				// set spell id to 0 to prevent "index out of bounds"
-				data.SpellId = 0;
-				// show information of chosen book
-				Game.PlayEffect(
-					"PWT",
-					ply.GetWorldPosition(),
-					data.Books[data.BookId].Name + " book"
-				);
+				data.SpellId = 0;		
 				// "multiple uses in one time"-protection
 				data.NextUseTime = Game.TotalElapsedGameTime + 500f;
-			}
+			}*/
 
 			// spell changing 
-			else if (ply.IsBlocking && !ply.IsWalking && data.NextUseTime <= Game.TotalElapsedGameTime){
+			if (ply.IsBlocking && !ply.IsWalking && data.NextUseTime <= Game.TotalElapsedGameTime){
 				if (ply.FacingDirection == 1)
 					if (data.SpellId == data.Books[data.BookId].Spells.Count - 1) data.SpellId = 0;
 					else data.SpellId ++;
@@ -490,7 +525,6 @@ private void Tick_Stats(){
 			} else {
 				ply.SetInputEnabled(false);
 				ply.RunToPosition(ply.GetWorldPosition(), ply.FacingDirection);
-
 			}
 		}
 	}
@@ -523,6 +557,9 @@ private void Tick_Weapons(){
 				obj.GetWorldPosition(),
 				0f
 			);
+		obj.Remove();
+	}
+	foreach(IObject obj in Game.GetObjectsByName(restrictedWeapons2)){
 		obj.Remove();
 	}
 }
@@ -792,6 +829,7 @@ private void SpellUsed(PlayerData data){
 			));
 			pendingTeleports.Add(new SpellsData_Teleport(ply, areaTrigger));
 			areaTrigger.SetScriptMethod("SpellTrigger_Teleport");
+			// make it dynamic to allow detecting static objects
 			areaTrigger.SetBodyType(BodyType.Dynamic);
 			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 50f, false));
 		}
@@ -984,7 +1022,8 @@ private void Tick_Spell_MindControl(){
 			// if player body is removed, delete entry
 			controlledPlayers.RemoveAt(i);
 			CheckGameover();
-		} else if (mindData.EndTime <= Game.TotalElapsedGameTime){
+			// exit body with walk+block
+		} else if (mindData.EndTime <= Game.TotalElapsedGameTime || (victPlayer.IsWalking && victPlayer.IsBlocking)){
 			Game.PlayEffect("Electric", victPlayer.GetWorldPosition() + new Vector2(0, 8f));
 
 			// if enough time passed, return user
@@ -994,7 +1033,7 @@ private void Tick_Spell_MindControl(){
 			}
 			// if player is not dead, make controller "exit"
 			if (!victPlayer.IsDead){
-				IPlayer controller = Game.CreatePlayer(victPlayer.GetWorldPosition() + new Vector2(victPlayer.FacingDirection * 24f, 0));
+				IPlayer controller = Game.CreatePlayer(victPlayer.GetWorldPosition() + new Vector2(victPlayer.FacingDirection * 6f, 0));
 				controller.SetHealth(mindData.ControllerHealth);
 				if (contData.User != null){
 					Game.PlayEffect("Electric", controller.GetWorldPosition() + new Vector2(0, 8f));
@@ -1155,8 +1194,8 @@ private void GiveBasicSpells(PlayerData data){
 		temp.Add(new PlayerData.BookData.SpellData("FireBall", 30f, 1000f));
 		temp.Add(new PlayerData.BookData.SpellData("Paper", 25f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Crate of doom", 60f, 10000f));
-		temp.Add(new PlayerData.BookData.SpellData("ANVIL", 40f, 3000f));
-		temp.Add(new PlayerData.BookData.SpellData("SUICIDE", 0f, 0f));
+		temp.Add(new PlayerData.BookData.SpellData("ANVIL", 40f, 5000f));
+		temp.Add(new PlayerData.BookData.SpellData("SUICIDE", 125f, 0f));
 
 		data.Books.Add(new PlayerData.BookData("Destruction", temp));
 	}
@@ -1164,28 +1203,28 @@ private void GiveBasicSpells(PlayerData data){
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 		temp.Add(new PlayerData.BookData.SpellData("Heal", 15f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Block", 25f, 500f));
-		temp.Add(new PlayerData.BookData.SpellData("Shield", 75f, 20000f));
-		temp.Add(new PlayerData.BookData.SpellData("Revive", 100f, 30000f));
+		temp.Add(new PlayerData.BookData.SpellData("Shield", 75f, 15000f));
+		temp.Add(new PlayerData.BookData.SpellData("Revive", 100f, 20000f));
 
 		data.Books.Add(new PlayerData.BookData("Protection", temp));
 	}
 	{	// alteration spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
-		temp.Add(new PlayerData.BookData.SpellData("FUS RO DAH", 90f, 15000));
+		temp.Add(new PlayerData.BookData.SpellData("FUS RO DAH", 90f, 15000f));
 		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 65f, 8000f));
-		temp.Add(new PlayerData.BookData.SpellData("SuperJump", 30f, 1000f));
 		temp.Add(new PlayerData.BookData.SpellData("Teleport", 80f, 1000f));
+		temp.Add(new PlayerData.BookData.SpellData("SuperJump", 30f, 1000f));
 
 		data.Books.Add(new PlayerData.BookData("Alteration", temp));
 	}
 	{	// controlling spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
-		temp.Add(new PlayerData.BookData.SpellData("Mind Lock", 100f, 40000f));
-		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 150f, 60000f));
+		temp.Add(new PlayerData.BookData.SpellData("Mind Lock", 100f, 20000f));
+		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 150f, 40000f));
 
 		data.Books.Add(new PlayerData.BookData("Controlling", temp));
 	}
-	
+
 	// disabled spells
 //		temp.Add(new PlayerData.BookData.SpellData("BALLOONS!", 60, 10000f));
 //		temp.Add(new PlayerData.BookData.SpellData("Demigod", 75, 10000f));
