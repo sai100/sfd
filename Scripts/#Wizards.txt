@@ -839,6 +839,26 @@ private void SpellUsed(PlayerData data){
 		ply.Gib();
 		Game.PlaySound("Wilhelm", ply.GetWorldPosition(), 75f);
 		break;
+	case "Tarot Card" :
+		Vector2 posCard = ply.GetWorldPosition() + new Vector2 (ply.FacingDirection*8f, 5f);
+		if ( rand.Next(78) == 77) {
+			Game.SpawnProjectile (ProjectileItem.SNIPER, posCard, new Vector2(ply.FacingDirection,0f));
+			Game.PlayEffect("PWT", ply.GetWorldPosition(), "The fool");
+			Game.PlaySound("Flaregun", ply.GetWorldPosition(), 50f);
+		}
+		else {
+			Game.SpawnProjectile (ProjectileItem.CARBINE, posCard, new Vector2(ply.FacingDirection,0f));
+			Game.PlaySound("MeleeDraw",ply.GetWorldPosition(),50f);
+		}
+		break;
+	case "Cloud" :
+		for (int i = 0; i < 6; i++) {
+			IObject obj = Game.CreateObject("InvisiblePlatform", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*(8f*i + 20f),-8f),0f);
+			projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 7000f, false));
+			IObject obj2 = Game.CreateObject("SteamSpawner", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*(8f*i + 20f),-8f),0f);
+			projs.Add(new ProjData(obj2, Game.TotalElapsedGameTime + 7000f, false));
+		}
+		break;
 	/*case "BALLOONS!":
 		for (int i = 0; i < 3; i++){
 			IObject proj = Game.CreateObject(
@@ -1196,6 +1216,7 @@ private void GiveBasicSpells(PlayerData data){
 		temp.Add(new PlayerData.BookData.SpellData("Crate of doom", 60f, 10000f));
 		temp.Add(new PlayerData.BookData.SpellData("ANVIL", 40f, 5000f));
 		temp.Add(new PlayerData.BookData.SpellData("SUICIDE", 125f, 0f));
+		temp.Add(new PlayerData.BookData.SpellData("Tarot Card", 12f, 200f));
 
 		data.Books.Add(new PlayerData.BookData("Destruction", temp));
 	}
@@ -1203,6 +1224,7 @@ private void GiveBasicSpells(PlayerData data){
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 		temp.Add(new PlayerData.BookData.SpellData("Heal", 15f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Block", 25f, 500f));
+		temp.Add(new PlayerData.BookData.SpellData("Cloud", 35f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Shield", 75f, 15000f));
 		temp.Add(new PlayerData.BookData.SpellData("Revive", 100f, 20000f));
 
