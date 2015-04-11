@@ -61,7 +61,7 @@ private const int EXPLODE_ON_DEATH_DELAY = 5;		    			// Time before the corpse 
 // general mod data
 public class ModData{
 	// we'll add something else later
-	public string Version = "1.1a";
+	public string Version = "1.1b";
 }
 private ModData modData = new ModData();
 
@@ -670,54 +670,56 @@ private void Tick_ExplodeOnDeath(){
 }
 
 private void CheckGameover(){
-	List <PlayerTeam> teams = new List<PlayerTeam>();
-	String winner = "";
+	if (!INSTAGIB_ON){
+		List <PlayerTeam> teams = new List<PlayerTeam>();
+		String winner = "";
 
-	//if (Game.GetActiveUsers().Length < 2) return;
+		//if (Game.GetActiveUsers().Length < 2) return;
 
-	foreach (PlayerData data in players)
-		if (!data.Body.IsRemoved && !teams.Contains(data.Team))
-			if (REVIVE_KILL_FALLEN_TO_GAMEOVER || (!REVIVE_KILL_FALLEN_TO_GAMEOVER && !data.Body.IsDead))
-				teams.Add(data.Team);
+		foreach (PlayerData data in players)
+			if (!data.Body.IsRemoved && !teams.Contains(data.Team))
+				if (REVIVE_KILL_FALLEN_TO_GAMEOVER || (!REVIVE_KILL_FALLEN_TO_GAMEOVER && !data.Body.IsDead))
+					teams.Add(data.Team);
 
-	switch (teams.Count){
-		case 5:
-			Game.ShowPopupMessage("Wut?");
-			break;
-		case 4:
-		case 3:
-		case 2:
-			return;
-		case 1:
-			if (teams[0] != PlayerTeam.Independent){
-				switch (teams[0]) {
-					case PlayerTeam.Team1 : winner = "Blue team"; break;
-					case PlayerTeam.Team2 : winner = "Red team"; break;
-					case PlayerTeam.Team3 : winner = "Green team"; break;
-					case PlayerTeam.Team4 : winner = "Yellow team"; break;
+		switch (teams.Count){
+			case 5:
+				Game.ShowPopupMessage("Wut?");
+				break;
+			case 4:
+			case 3:
+			case 2:
+				return;
+			case 1:
+				if (teams[0] != PlayerTeam.Independent){
+					switch (teams[0]) {
+						case PlayerTeam.Team1 : winner = "Blue team"; break;
+						case PlayerTeam.Team2 : winner = "Red team"; break;
+						case PlayerTeam.Team3 : winner = "Green team"; break;
+						case PlayerTeam.Team4 : winner = "Yellow team"; break;
+					}
+				} else {
+					int plysAlive = 0;
+					int plysFallen = 0;
+					foreach (PlayerData data in players){
+						if (!data.Body.IsDead){
+							plysAlive ++;
+							if (winner == "") winner = data.Body.GetProfile().Name;
+						} else plysFallen ++;
+					}
+
+					int plys = 0;
+					if (REVIVE_KILL_FALLEN_TO_GAMEOVER) plys = plysAlive + plysFallen;
+					else plys = plysAlive;
+
+					if (plys > 1) return;
 				}
-			} else {
-				int plysAlive = 0;
-				int plysFallen = 0;
-				foreach (PlayerData data in players){
-					if (!data.Body.IsDead){
-						plysAlive ++;
-						if (winner == "") winner = data.Body.GetProfile().Name;
-					} else plysFallen ++;
-				}
-
-				int plys = 0;
-				if (REVIVE_KILL_FALLEN_TO_GAMEOVER) plys = plysAlive + plysFallen;
-				else plys = plysAlive;
-
-				if (plys > 1) return;
-			}
-			Game.SetGameOver(winner + " wins!");
-			break;
-		case 0:
-			Game.SetGameOver("Draw!");
-			break;
-	}
+				Game.SetGameOver(winner + " wins!");
+				break;
+			case 0:
+				Game.SetGameOver("Draw!");
+				break;
+		}
+	} else return;
 }
 
 
