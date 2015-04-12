@@ -11,7 +11,7 @@ private const bool HARDCORE_ACTIVATED = true;			    		// set to "true" to enable
 private const float HC_GUNS_MULTIPLIER = (float) 2.0;		    	// damage multiplier for guns
 private const float HC_MELEE_MULTIPLIER = (float) 2.0;		   		// damage multiplier for melee
 private const float HC_FALL_MULTIPLIER = (float) 3.5;		    	// damage multiplier for fall
-private const float HC_FIRE_MULTIPLIER = (float) 3.0;		    	// damage multiplier for fire
+private const float HC_FIRE_MULTIPLIER = (float) 2.5;		    	// damage multiplier for fire
 private const float HC_EXPL_MULTIPLIER = (float) 2.0;		    	// damage multiplier for explosions
 private const bool HC_BLOCK_DAMAGE = true;			    			// set to "true" to make blocked attacks damage players
 private const int HC_BLOCK_DAMAGE_AMOUNT = 3;		    			// damage in HP given by blocked attack
@@ -30,7 +30,6 @@ private const bool REVIVE_CAPTURE_ENEMIES = true;		    		// set to "true" to all
 private const bool REVIVE_BLEEDING = true;			    			// set to "true" to make players bleed before death
 private const bool REVIVE_FINISH_PLAYERS = true;		    		// set to "true" to allow players finish people
 private const int REVIVE_FINISH_HEALTH = 20;			    		// health of unfinished player
-private const bool REVIVE_KILL_FALLEN_TO_GAMEOVER = true;			// set to "true" to end round only when all players are completely dead
 //========================<instagib mode>===========================//
 private const bool INSTAGIB_ACTIVATED = true;			    		// set to "true" to activate instagib mode
 private const bool INSTAGIB_RANDOM = true;			    			// set to "true" to make instagib randomly appear with selected chance
@@ -61,7 +60,7 @@ private const int EXPLODE_ON_DEATH_DELAY = 5;		    			// Time before the corpse 
 // general mod data
 public class ModData{
 	// we'll add something else later
-	public string Version = "1.1b";
+	public string Version = "1.1c";
 }
 private ModData modData = new ModData();
 
@@ -172,6 +171,9 @@ private class PlayerData {
 // ============================ V
 
 public void OnStartup(){
+	ModMessage("v" + modData.Version);
+	if (HOSTING_ACTIVATED) ModMessage("Host is AFK");
+
 	bool mapIsGood = true;
 	if (Game.GetMapType() == MapType.Custom) mapIsGood = false;
 	foreach (string mapName in restrictedMaps) if (mapName == Game.MapName) mapIsGood = false;
@@ -217,27 +219,25 @@ public void OnStartup(){
 		if (INSTAGIB_ON) Prepare_Instagib();
 		else Prepare_CustomDamage();
 
-		if (HOSTING_ACTIVATED){
-			hostPlayer = Game.GetActiveUsers()[0].GetPlayer();
-
-			if (!HOSTING_TIME_BOMB) hostPlayer.Remove();
-			else {
-				// tick trigger
-				IObjectTimerTrigger timerTriger5 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
-				timerTriger5.SetIntervalTime(1000);
-				timerTriger5.SetRepeatCount(0);
-				timerTriger5.SetScriptMethod("Tick_Bomb");
-				timerTriger5.CustomId = "Tick_BombTrigger";
-				timerTriger5.Trigger();
-			}
-		}
-
 		// some messages
-		ModMessage("v" + modData.Version);
-		if (HOSTING_ACTIVATED) ModMessage("Host is AFK");
 		if (INSTAGIB_ON && INSTAGIB_RANDOM) ModMessage("INSTAGIB ROUND!");
 	} else {
 		ModMessage("This map is restricted.");
+	}
+
+	if (HOSTING_ACTIVATED){
+		hostPlayer = Game.GetActiveUsers()[0].GetPlayer();
+
+		if (!HOSTING_TIME_BOMB) hostPlayer.Remove();
+		else {
+			// tick trigger
+			IObjectTimerTrigger timerTriger5 = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+			timerTriger5.SetIntervalTime(1000);
+			timerTriger5.SetRepeatCount(0);
+			timerTriger5.SetScriptMethod("Tick_Bomb");
+			timerTriger5.CustomId = "Tick_BombTrigger";
+			timerTriger5.Trigger();
+		}
 	}
 }
 
@@ -254,6 +254,8 @@ public void TickSlow(TriggerArgs args){
 	if (TIME_LIMIT_ACTIVATED) Tick_TimeLimit();
 	if (COMMENT_ACTIVATED) Tick_Commentator();
 	if (EXPLODE_ON_DEATH) Tick_ExplodeOnDeath();
+
+	if (REVIVE_ACTIVATED || HARDCORE_ACTIVATED) Tick_CheckPlayers();
 }
 
 private void ShowSettings(){
@@ -332,6 +334,51 @@ public void Death(TriggerArgs args){
 	CheckGameover();
 }
 
+public void Tick_CheckPlayers(){
+	for(int i = players.Count - 1; i >=0; i--)
+		if (players[i].Body.IsRemoved || (!REVIVE_ACTIVATED && players[i].Body.IsDead)){
+			if (players[i].Label != null) players[i].Label.Remove();
+			players.RemoveAt(i);
+		}
+
+	CheckGameover();
+}
+
+private void CheckGameover(){
+	if (!INSTAGIB_ON && (REVIVE_ACTIVATED || HARDCORE_ACTIVATED)){
+		String winner = "";
+
+		// do not end round if there's only one player
+		if (Game.GetActiveUsers().Length < 2) return;
+
+		List <PlayerTeam> teams = new List<PlayerTeam>();
+		int plysAlive = 0;
+		foreach (IPlayer ply in Game.GetPlayers())
+			if (!ply.IsDead && !ply.IsRemoved){
+				if (!teams.Contains(ply.GetTeam())) teams.Add(ply.GetTeam());
+				winner = ply.GetProfile().Name;
+				plysAlive ++;
+			}
+
+		if (teams.Count > 1) return;
+		else if (teams.Count == 1){
+			if (teams[0] != PlayerTeam.Independent){
+				switch (teams[0]){
+					case PlayerTeam.Team1 : winner = "Blue team"; break;
+					case PlayerTeam.Team2 : winner = "Red team"; break;
+					case PlayerTeam.Team3 : winner = "Green team"; break;
+					case PlayerTeam.Team4 : winner = "Yellow team"; break;
+				}
+			} else if (plysAlive > 1) return;
+		} else if (teams.Count == 0){
+			Game.SetGameOver("DRAW!");
+			return;
+		}
+
+		Game.SetGameOver(winner + " wins!");
+	} else return;
+}
+
 // ============================= |
 // =========< OPTIONS >========= |
 // ============================= V
@@ -340,98 +387,100 @@ private void Tick_Revive(){
 	// travel through dead players list
 	for(int i = players.Count - 1; i >=0; i--){
 		IPlayer body = players[i].Body;
-		if (body.IsDead){
-			// check if body is present and time's not passed
-			if (body != null && !body.IsRemoved &&
-			((Game.TotalElapsedGameTime - players[i].DeathTime < (REVIVE_TIME_ALIVE * 1000f)) || players[i].RevivePoints != 0)){
-				bool revivingNow = false;
-				bool spawnedNow = false;
-				bool diedNow = false;
+		if (!body.IsRemoved){
+			if (body.IsDead){
+				// check if body is present and time's not passed
+				if (body != null &&
+				((Game.TotalElapsedGameTime - players[i].DeathTime < (REVIVE_TIME_ALIVE * 1000f)) || players[i].RevivePoints != 0)){
+					bool revivingNow = false;
+					bool spawnedNow = false;
+					bool diedNow = false;
 
-				IObjectText label = null;
-				if (players[i].Label != null){
-					players[i].Label.SetWorldPosition(body.GetWorldPosition() + new Vector2(-6, 16));
-					label = players[i].Label;
+					IObjectText label = null;
+					if (players[i].Label != null){
+						players[i].Label.SetWorldPosition(body.GetWorldPosition() + new Vector2(-6, 16));
+						label = players[i].Label;
+					} else {
+						label = (IObjectText)Game.CreateObject("Text", body.GetWorldPosition() + new Vector2(-6, 16), 0);
+					}
+
+					float damage = (body.Statistics.TotalFallDamageTaken / 3f) +
+						body.Statistics.TotalMeleeDamageTaken +
+						body.Statistics.TotalProjectileDamageTaken +
+						body.Statistics.TotalExplosionDamageTaken +
+						body.Statistics.TotalFireDamageTaken;
+						
+					if (REVIVE_FINISH_PLAYERS && damage > players[i].DeathDamageTaken + (float)REVIVE_FINISH_HEALTH){
+						diedNow = true;
+						if (players[i].Label != null) players[i].Label.Remove();
+						players.RemoveAt(i);
+						CheckGameover();
+					}
+
+					// check for crouching players nearby
+					if (!diedNow){
+						foreach (IPlayer ply in Game.GetPlayers()){
+							if (!ply.IsDead && !ply.IsRemoved && (ply.GetWorldPosition() - body.GetWorldPosition()).LengthSquared() < 144 && ply.IsCrouching &&
+								(REVIVE_CAPTURE_ENEMIES || ply.GetTeam() == players[i].Body.GetTeam())){
+								revivingNow = true;
+								// spawn player if enough time passed
+								if (players[i].RevivePoints >= REVIVE_DURATION * 2){
+									// spawn player
+									if (UserStillHere(players[i].User))
+										RevivePlayer(body, ply, players[i].User, ply.GetTeam());
+									// if disconnected, gib body
+									else body.Gib();
+									// remove the rest
+									label.Remove();
+									players.RemoveAt(i);
+									CheckGameover();
+
+									spawnedNow = true;
+									break;
+								} else {
+									// make team revives faster
+									if (ply.GetTeam() == players[i].Body.GetTeam() || !REVIVE_TEAMMATES_FASTER) 
+										players[i].RevivePoints += 2;
+									else
+										players[i].RevivePoints ++;
+								}
+							}
+						} 
+					}
+					// if player just spawned, do not do anything else
+					if (!spawnedNow && !diedNow){
+						if (players[i].RevivePoints != 0 && !revivingNow) players[i].RevivePoints = 0;
+						if (REVIVE_BLEEDING) Game.PlayEffect("TR_B",body.GetWorldPosition() + new Vector2(rand.Next(-4,4),rand.Next(-4,4)));
+						// draw time left if not being revived
+						if (!revivingNow){
+							int totalSeconds = (int)((REVIVE_TIME_ALIVE*1000f + players[i].DeathTime - Game.TotalElapsedGameTime) / 1000f);
+							int minutes = totalSeconds / 60;
+							int seconds = totalSeconds - (minutes * 60);
+
+							label.SetText(players[i].User.GetProfile().Name + "\n" + string.Format(minutes.ToString() + ":{0:00}", seconds));
+							label.SetTextColor(GetTeamColor(players[i].Body.GetTeam()));
+						}
+						// draw progress of reviving if is being revived
+						else {
+							label.SetWorldPosition(body.GetWorldPosition() + new Vector2(-28, 16));
+							int progress = (int)(10f * ((float)players[i].RevivePoints / (REVIVE_DURATION * 2f)));
+							string filling = "";
+							for (int j = 1; j <= progress; j++) filling += "=";
+							if (progress != 10) filling += ">";
+							for (int j = progress + 2; j <= 10; j++)	filling += "  ";
+
+							label.SetText(players[i].User.GetProfile().Name + "\n" + string.Format("[" + filling + "]"));
+							label.SetTextColor(GetTeamColor(players[i].Body.GetTeam()));
+						}
+
+						players[i].Label = label;
+					}
+				// if player's body is removed, gibbed or time has run out, remove entry from list
 				} else {
-					label = (IObjectText)Game.CreateObject("Text", body.GetWorldPosition() + new Vector2(-6, 16), 0);
-				}
-
-				float damage = (body.Statistics.TotalFallDamageTaken / 3f) +
-					body.Statistics.TotalMeleeDamageTaken +
-					body.Statistics.TotalProjectileDamageTaken +
-					body.Statistics.TotalExplosionDamageTaken +
-					body.Statistics.TotalFireDamageTaken;
-					
-				if (REVIVE_FINISH_PLAYERS && damage > players[i].DeathDamageTaken + (float)REVIVE_FINISH_HEALTH){
-					diedNow = true;
 					if (players[i].Label != null) players[i].Label.Remove();
 					players.RemoveAt(i);
 					CheckGameover();
 				}
-
-				// check for crouching players nearby
-				if (!diedNow){
-					foreach (IPlayer ply in Game.GetPlayers()){
-						if (!ply.IsDead && !ply.IsRemoved && (ply.GetWorldPosition() - body.GetWorldPosition()).LengthSquared() < 144 && ply.IsCrouching &&
-							(REVIVE_CAPTURE_ENEMIES || ply.GetTeam() == players[i].Body.GetTeam())){
-							revivingNow = true;
-							// spawn player if enough time passed
-							if (players[i].RevivePoints >= REVIVE_DURATION * 2){
-								// spawn player
-								if (UserStillHere(players[i].User))
-									RevivePlayer(body, ply, players[i].User, ply.GetTeam());
-								// if disconnected, gib body
-								else body.Gib();
-								// remove the rest
-								label.Remove();
-								players.RemoveAt(i);
-								CheckGameover();
-
-								spawnedNow = true;
-								break;
-							} else {
-								// make team revives faster
-								if (ply.GetTeam() == players[i].Body.GetTeam() || !REVIVE_TEAMMATES_FASTER) 
-									players[i].RevivePoints += 2;
-								else
-									players[i].RevivePoints ++;
-							}
-						}
-					} 
-				}
-				// if player just spawned, do not do anything else
-				if (!spawnedNow && !diedNow){
-					if (players[i].RevivePoints != 0 && !revivingNow) players[i].RevivePoints = 0;
-					if (REVIVE_BLEEDING) Game.PlayEffect("TR_B",body.GetWorldPosition() + new Vector2(rand.Next(-4,4),rand.Next(-4,4)));
-					// draw time left if not being revived
-					if (!revivingNow){
-						int totalSeconds = (int)((REVIVE_TIME_ALIVE*1000f + players[i].DeathTime - Game.TotalElapsedGameTime) / 1000f);
-						int minutes = totalSeconds / 60;
-						int seconds = totalSeconds - (minutes * 60);
-
-						label.SetText(players[i].User.GetProfile().Name + "\n" + string.Format(minutes.ToString() + ":{0:00}", seconds));
-						label.SetTextColor(GetTeamColor(players[i].Body.GetTeam()));
-					}
-					// draw progress of reviving if is being revived
-					else {
-						label.SetWorldPosition(body.GetWorldPosition() + new Vector2(-28, 16));
-						int progress = (int)(10f * ((float)players[i].RevivePoints / (REVIVE_DURATION * 2f)));
-						string filling = "";
-						for (int j = 1; j <= progress; j++) filling += "=";
-						if (progress != 10) filling += ">";
-						for (int j = progress + 2; j <= 10; j++)	filling += "  ";
-
-						label.SetText(players[i].User.GetProfile().Name + "\n" + string.Format("[" + filling + "]"));
-						label.SetTextColor(GetTeamColor(players[i].Body.GetTeam()));
-					}
-
-					players[i].Label = label;
-				}
-			// if player's body is removed, gibbed or time has run out, remove entry from list
-			} else {
-				if (players[i].Label != null) players[i].Label.Remove();
-				players.RemoveAt(i);
-				CheckGameover();
 			}
 		}
 	}
@@ -667,59 +716,6 @@ private void Tick_ExplodeOnDeath(){
 			}
 		}
 	}
-}
-
-private void CheckGameover(){
-	if (!INSTAGIB_ON){
-		List <PlayerTeam> teams = new List<PlayerTeam>();
-		String winner = "";
-
-		//if (Game.GetActiveUsers().Length < 2) return;
-
-		foreach (PlayerData data in players)
-			if (!data.Body.IsRemoved && !teams.Contains(data.Team))
-				if (REVIVE_KILL_FALLEN_TO_GAMEOVER || (!REVIVE_KILL_FALLEN_TO_GAMEOVER && !data.Body.IsDead))
-					teams.Add(data.Team);
-
-		switch (teams.Count){
-			case 5:
-				Game.ShowPopupMessage("Wut?");
-				break;
-			case 4:
-			case 3:
-			case 2:
-				return;
-			case 1:
-				if (teams[0] != PlayerTeam.Independent){
-					switch (teams[0]) {
-						case PlayerTeam.Team1 : winner = "Blue team"; break;
-						case PlayerTeam.Team2 : winner = "Red team"; break;
-						case PlayerTeam.Team3 : winner = "Green team"; break;
-						case PlayerTeam.Team4 : winner = "Yellow team"; break;
-					}
-				} else {
-					int plysAlive = 0;
-					int plysFallen = 0;
-					foreach (PlayerData data in players){
-						if (!data.Body.IsDead){
-							plysAlive ++;
-							if (winner == "") winner = data.Body.GetProfile().Name;
-						} else plysFallen ++;
-					}
-
-					int plys = 0;
-					if (REVIVE_KILL_FALLEN_TO_GAMEOVER) plys = plysAlive + plysFallen;
-					else plys = plysAlive;
-
-					if (plys > 1) return;
-				}
-				Game.SetGameOver(winner + " wins!");
-				break;
-			case 0:
-				Game.SetGameOver("Draw!");
-				break;
-		}
-	} else return;
 }
 
 
