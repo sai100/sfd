@@ -191,7 +191,6 @@ string[] restrictedWeapons = new string[]{
 	"WPNPUMPSHOTGUN",
 	"WPNKATANA",
 	"WPNPIPEWRENCH",
-	"WPNUZI",
 	"WPNTOMMYGUN",
 	"WPNMACHETE",
 	"WPNSNIPERRIFLE",
@@ -208,7 +207,7 @@ string[] restrictedWeapons = new string[]{
 	"WPNFLAREGUN",
 	"WPNREVOLVER",
 	"WPNGRENADELAUNCHER",
-	"WPNSMG",
+	"WPNM60",
 	"WPNGRENADESTHROWN",
 	"WPNMOLOTOVSTHROWN"
 };
@@ -216,7 +215,8 @@ string[] restrictedWeapons = new string[]{
 string[] restrictedWeapons2 = new string[]{
 	"WPNHAMMER",
 	"WPNSUBMACHINEGUN",
-	"WPNM60",
+	"WPNUZI",
+	"WPNSMG",
 	"WPNGRENADES"
 };
 string[] replacingWeapons = new string[]{
