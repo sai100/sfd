@@ -841,18 +841,41 @@ private void SpellUsed(PlayerData data){
 		break;
 	case "Tarot Card" :
 		Vector2 posCard = ply.GetWorldPosition() + new Vector2 (ply.FacingDirection*8f, 5f);
-		if ( rand.Next(78) == 77) {
-			Game.SpawnProjectile (ProjectileItem.SNIPER, posCard, new Vector2(ply.FacingDirection,0f));
-			Game.PlayEffect("PWT", ply.GetWorldPosition(), "The fool");
-			Game.PlaySound("Flaregun", ply.GetWorldPosition(), 50f);
-		}
-		else {
-			Game.SpawnProjectile (ProjectileItem.CARBINE, posCard, new Vector2(ply.FacingDirection,0f));
-			Game.PlaySound("MeleeDraw",ply.GetWorldPosition(),50f);
+		switch ( rand.Next(78)) {
+			case 77 : {
+				Game.SpawnProjectile (ProjectileItem.SNIPER, posCard, new Vector2(ply.FacingDirection,0f));
+				Game.PlayEffect("PWT", ply.GetWorldPosition(), "The fool");
+				Game.PlaySound("Flaregun", ply.GetWorldPosition(), 50f);
+				break;
+			}
+			case 76 : {
+				Game.SpawnProjectile (ProjectileItem.REVOLVER, posCard, new Vector2(ply.FacingDirection,0f));
+				Game.PlayEffect("PWT", ply.GetWorldPosition(), "The magician");
+				Game.PlaySound("ItemSpawn", ply.GetWorldPosition(), 50f);
+				usedNow = false;
+				data.Mana += 10;
+				data.LastUseTime = 0f; 
+				break;
+			}
+			case 75 : {
+				Game.SpawnProjectile (ProjectileItem.REVOLVER, posCard, new Vector2(ply.FacingDirection,0f));
+				Game.PlayEffect("PWT", ply.GetWorldPosition(), "The judgment");
+				Game.PlaySound("ElevatorDing", ply.GetWorldPosition(), 50f);
+				Game.PlaySound("FootstepPiano", ply.GetWorldPosition(), 50f);
+				float healAmount = 9f;
+				if (ply.GetHealth() > 50f - healAmount)data.AddedHealth += 50f - ply.GetHealth();
+				else data.AddedHealth += healAmount;
+				break;
+			}
+			default : {
+				Game.SpawnProjectile (ProjectileItem.CARBINE, posCard, new Vector2(ply.FacingDirection,0f));
+				Game.PlaySound("MeleeDraw",ply.GetWorldPosition(),50f);
+				break;
+			}
 		}
 		break;
 	case "Cloud" :
-		for (int i = 0; i < 6; i++) {
+		for (int i = 0; i < 5; i++) {
 			IObject obj = Game.CreateObject("InvisiblePlatform", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*(8f*i + 20f),-8f),0f);
 			projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 7000f, false));
 			IObject obj2 = Game.CreateObject("SteamSpawner", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*(8f*i + 20f),-8f),0f);
@@ -878,8 +901,8 @@ private void SpellUsed(PlayerData data){
 	}
 
 	if (!UNLIMITED_MANA && usedNow) data.Mana -= data.Books[data.BookId].Spells[data.SpellId].ManaCost;
-	if (MANA_COOLDOWN_ACTIVATED) data.LastUseTime = Game.TotalElapsedGameTime;
-	if (SPELL_COOLDOWN_ACTIVATED) data.Books[data.BookId].Spells[data.SpellId].LastUseTime = Game.TotalElapsedGameTime;
+	if (MANA_COOLDOWN_ACTIVATED && usedNow) data.LastUseTime = Game.TotalElapsedGameTime;
+	if (SPELL_COOLDOWN_ACTIVATED && usedNow) data.Books[data.BookId].Spells[data.SpellId].LastUseTime = Game.TotalElapsedGameTime;
 }
 
 // | these methods are used by spells
