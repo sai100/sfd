@@ -119,18 +119,12 @@ private class ProjData {
 	public float DeSpawnTime = 0f;
 	public float UnFreezeTime = 0f;
 	public bool Explosive = false;
+	public short SmokingAmount = 0;
+	public short SmokingRadius = 6;
 
-	public ProjData (IObject obj, float time, bool explode){
+	public ProjData (IObject obj, float time){
 		this.ProjObject = obj;
 		this.DeSpawnTime = time;
-		this.Explosive = explode;
-	}
-
-	public ProjData (IObject obj, float time, bool explode, float unfreeze){
-		this.ProjObject = obj;
-		this.DeSpawnTime = time;
-		this.Explosive = explode;
-		this.UnFreezeTime = unfreeze;
 	}
 }
 
@@ -533,9 +527,17 @@ private void Tick_Stats(){
 // remove objects and tiles that exceeded their lifetime
 private void Tick_Projectiles(){
 	for(int i = projs.Count - 1; i >=0; i--){
+		// frozen objects will be unfrozen here
 		if (projs[i].UnFreezeTime != 0f && projs[i].UnFreezeTime <= Game.TotalElapsedGameTime && projs[i].ProjObject.GetBodyType() == BodyType.Static)
 			projs[i].ProjObject.SetBodyType(BodyType.Dynamic);
-
+		// smoking objects will create smoke here
+		if(projs[i].SmokingAmount != 0){
+			Vector2 pos = projs[i].ProjObject.GetWorldPosition();
+			short radius = projs[i].SmokingRadius;
+			for (int j = 0; j < projs[i].SmokingAmount; j++)
+				Game.PlayEffect("TR_D", pos + new Vector2(rand.Next(-radius,radius), rand.Next(-radius,radius)));
+		}
+		// objects die here
 		if (Game.TotalElapsedGameTime  >= projs[i].DeSpawnTime){
 			if (projs[i].Explosive && !projs[i].ProjObject.IsRemoved) Game.TriggerExplosion(projs[i].ProjObject.GetWorldPosition());
 			/*{
@@ -659,7 +661,7 @@ private void SpellUsed(PlayerData data){
 			new Vector2(ply.FacingDirection * 15, 3),
 			(float)rand.Next(-50, 50));
 			for (int i = 0; i < 15; i++) Game.PlayEffect("TR_D",pos + new Vector2(rand.Next(-6,6), rand.Next(-6,6)));
-			projs.Add(new ProjData(proj, Game.TotalElapsedGameTime + 8000f, false));
+			projs.Add(new ProjData(proj, Game.TotalElapsedGameTime + 8000f));
 		}
 		break;
 	case "Paper":
@@ -672,7 +674,11 @@ private void SpellUsed(PlayerData data){
 			new Vector2(ply.FacingDirection * 10, 3),
 			(float)rand.Next(-30, 30));
 			Game.PlayEffect("Electric", pos);
-			projs.Add(new ProjData(proj, Game.TotalElapsedGameTime + 1500f, true));
+			ProjData projData = new ProjData(proj, Game.TotalElapsedGameTime + 1500f);
+			projData.Explosive = true;
+			projData.SmokingAmount = 2;
+			projData.SmokingRadius = 2;
+			projs.Add(projData);
 		}
 		break;
 	case "ANVIL":
@@ -681,7 +687,7 @@ private void SpellUsed(PlayerData data){
 			IObject proj = Game.CreateObject("StoneWeak00C", pos, 0f);
 			proj.SetBodyType(BodyType.Dynamic);
 			proj.SetLinearVelocity(new Vector2(0, -10));
-			projs.Add(new ProjData(proj, Game.TotalElapsedGameTime + 1000f, false));
+			projs.Add(new ProjData(proj, Game.TotalElapsedGameTime + 1000f));
 			for (int i = 0; i < 15; i++) Game.PlayEffect("TR_D",pos + new Vector2(rand.Next(-6,6), rand.Next(-6,6)));
 		}
 		break;
@@ -705,7 +711,7 @@ private void SpellUsed(PlayerData data){
 				));
 				areaTrigger.SetScriptMethod("SpellTrigger_Revive");
 				areaTrigger.CustomId = "ReviveTrigger";
-				projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 50f, false));
+				projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 50f));
 			}
 		m_reviveTeam = ply.GetTeam();
 		break;
@@ -717,7 +723,7 @@ private void SpellUsed(PlayerData data){
 		break;
 	case "Block":
 		IObject grab = Game.CreateObject("Wood03F", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*7, 0), 0);
-		projs.Add(new ProjData(grab, Game.TotalElapsedGameTime + 1200f, false));
+		projs.Add(new ProjData(grab, Game.TotalElapsedGameTime + 1200f));
 		break;
 	case "Shield":
 		{
@@ -725,19 +731,33 @@ private void SpellUsed(PlayerData data){
 			float lifetime = 30000f;
 			Vector2 pos = ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 30, 3);
 			{ IObject piece = Game.CreateObject("StoneWeak00C", pos, 0f);
-			projs.Add(new ProjData(piece, Game.TotalElapsedGameTime + lifetime, false, Game.TotalElapsedGameTime + delay)); }
+				ProjData proj = new ProjData(piece, Game.TotalElapsedGameTime + lifetime);
+				proj.UnFreezeTime = Game.TotalElapsedGameTime + delay;
+				projs.Add(proj); }
 			{ IObject piece = Game.CreateObject("StoneWeak00C", pos + new Vector2(8, 24), 0f);
-			projs.Add(new ProjData(piece, Game.TotalElapsedGameTime + lifetime, false, Game.TotalElapsedGameTime + delay)); }
+				ProjData proj = new ProjData(piece, Game.TotalElapsedGameTime + lifetime);
+				proj.UnFreezeTime = Game.TotalElapsedGameTime + delay;
+				projs.Add(proj); }
 			{ IObject piece = Game.CreateObject("StoneWeak00B", pos + new Vector2(12, 0), -1.57f);
-			projs.Add(new ProjData(piece, Game.TotalElapsedGameTime + lifetime, false, Game.TotalElapsedGameTime + delay)); }
+				ProjData proj = new ProjData(piece, Game.TotalElapsedGameTime + lifetime);
+				proj.UnFreezeTime = Game.TotalElapsedGameTime + delay;
+				projs.Add(proj); }
 			{ IObject piece = Game.CreateObject("StoneWeak00B", pos + new Vector2(8, 12), 0f);
-			projs.Add(new ProjData(piece, Game.TotalElapsedGameTime + lifetime, false, Game.TotalElapsedGameTime + delay)); }
+				ProjData proj = new ProjData(piece, Game.TotalElapsedGameTime + lifetime);
+				proj.UnFreezeTime = Game.TotalElapsedGameTime + delay;
+				projs.Add(proj); }
 			{ IObject piece = Game.CreateObject("StoneWeak00B", pos + new Vector2(-4, 16), 1.57f);
-			projs.Add(new ProjData(piece, Game.TotalElapsedGameTime + lifetime, false, Game.TotalElapsedGameTime + delay)); }
+				ProjData proj = new ProjData(piece, Game.TotalElapsedGameTime + lifetime);
+				proj.UnFreezeTime = Game.TotalElapsedGameTime + delay;
+				projs.Add(proj); }
 			{ IObject piece = Game.CreateObject("StoneWeak00B", pos + new Vector2(-4, 32), 1.57f);
-			projs.Add(new ProjData(piece, Game.TotalElapsedGameTime + lifetime, false, Game.TotalElapsedGameTime + delay)); }
+				ProjData proj = new ProjData(piece, Game.TotalElapsedGameTime + lifetime);
+				proj.UnFreezeTime = Game.TotalElapsedGameTime + delay;
+				projs.Add(proj); }
 			{ IObject piece = Game.CreateObject("StoneWeak00B", pos + new Vector2(8, 36), 0f);
-			projs.Add(new ProjData(piece, Game.TotalElapsedGameTime + lifetime, false, Game.TotalElapsedGameTime + delay)); }
+				ProjData proj = new ProjData(piece, Game.TotalElapsedGameTime + lifetime);
+				proj.UnFreezeTime = Game.TotalElapsedGameTime + delay;
+				projs.Add(proj); }
 		}
 		break;
 	case "Mind Lock":
@@ -749,7 +769,7 @@ private void SpellUsed(PlayerData data){
 				0
 			));
 			areaTrigger.SetScriptMethod("SpellTrigger_MindLock");
-			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 150f, false));
+			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 150f));
 		}
 		m_mindLocker = ply;
 		break;
@@ -764,7 +784,7 @@ private void SpellUsed(PlayerData data){
 			));
 			areaTrigger.CustomId = "MindControlTrigger";
 			areaTrigger.SetScriptMethod("SpellTrigger_MindControl");
-			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 150f, false));
+			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 150f));
 		}
 		break;
 	case "FUS RO DAH":
@@ -779,7 +799,7 @@ private void SpellUsed(PlayerData data){
 				for (int j = 0; j < 15; j++) Game.PlayEffect("TR_D", pos + new Vector2(rand.Next(-6,6), rand.Next(4,16)));
 				if (data.Player.FacingDirection == 1) areaTrigger.SetScriptMethod("SpellTrigger_FusRoDah_Right");
 				else areaTrigger.SetScriptMethod("SpellTrigger_FusRoDah_Left");
-				projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 100f, false));
+				projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 100f));
 			}
 			Game.PlayEffect("CAM_S", Vector2.Zero, 1f, 500f, true);
 		}
@@ -795,7 +815,7 @@ private void SpellUsed(PlayerData data){
 				));
 				for (int j = 0; j < 15; j++) Game.PlayEffect("TR_D", pos + new Vector2(rand.Next(-6,6), rand.Next(-6,6)));
 				areaTrigger.SetScriptMethod("SpellTrigger_ToTheMoon");
-				projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 100f, false));
+				projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 100f));
 			}
 			Game.PlayEffect("CAM_S", Vector2.Zero, 1f, 500f, true);
 		}
@@ -811,7 +831,7 @@ private void SpellUsed(PlayerData data){
 					obj.SetBodyType(BodyType.Dynamic);
 					obj.SetLinearVelocity(new Vector2(0, 13f));
 					obj.SetAngularVelocity((-1) * ply.FacingDirection * 4f);
-					projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f, false));
+					projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f));
 					for (int j = 0; j < 18; j++) Game.PlayEffect("TR_D", ply.GetWorldPosition() + new Vector2(rand.Next(-12,12), rand.Next(-2,2)));
 				//}
 			Game.PlayEffect("CAM_S", Vector2.Zero, 1f, 500f, true);
@@ -831,7 +851,7 @@ private void SpellUsed(PlayerData data){
 			areaTrigger.SetScriptMethod("SpellTrigger_Teleport");
 			// make it dynamic to allow detecting static objects
 			areaTrigger.SetBodyType(BodyType.Dynamic);
-			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 50f, false));
+			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 50f));
 		}
 		break;
 	case "SUICIDE":
@@ -875,11 +895,11 @@ private void SpellUsed(PlayerData data){
 		}
 		break;
 	case "Cloud" :
-		for (int i = 0; i < 5; i++) {
-			IObject obj = Game.CreateObject("InvisiblePlatform", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*(8f*i + 20f),-8f),0f);
-			projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 7000f, false));
-			IObject obj2 = Game.CreateObject("SteamSpawner", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*(8f*i + 20f),-8f),0f);
-			projs.Add(new ProjData(obj2, Game.TotalElapsedGameTime + 7000f, false));
+		for (int i = 0; i < 4; i++) {
+			IObject obj = Game.CreateObject("InvisiblePlatform", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*(8f*i - 16f),-10f),0f);
+			ProjData proj = new ProjData(obj, Game.TotalElapsedGameTime + 7000f);
+				proj.SmokingAmount = 4;
+				projs.Add(proj);
 		}
 		break;
 	/*case "BALLOONS!":
@@ -939,7 +959,7 @@ public void SpellTrigger_FusRoDah_Right(TriggerArgs args){
 //		obj.SetStickyFeet(true);
 		obj.SetLinearVelocity(new Vector2(12, 8));
 		obj.CustomId = "PushBlock";
-		projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f, false));
+		projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f));
 
 		Game.PlayEffect("TR_D", ply.GetWorldPosition() + new Vector2(rand.Next(4,16), rand.Next(4,16)));
 	} else if (args.Sender is IObject){
@@ -963,7 +983,7 @@ public void SpellTrigger_FusRoDah_Left(TriggerArgs args){
 //		obj.SetStickyFeet(true);
 		obj.SetLinearVelocity(new Vector2(-12, 8));
 		obj.CustomId = "PushBlock";
-		projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f, false));
+		projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f));
 
 		Game.PlayEffect("TR_D", ply.GetWorldPosition() + new Vector2(rand.Next(-16,4), rand.Next(4,16)));
 	} else if (args.Sender is IObject){
@@ -982,7 +1002,7 @@ public void SpellTrigger_ToTheMoon(TriggerArgs args){
 			0);
 		obj.SetBodyType(BodyType.Dynamic);
 		obj.SetLinearVelocity(new Vector2(0, 10f));
-		projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 200f, false));
+		projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 200f));
 	} else if (args.Sender is IObject){
 		IObject obj = (IObject)args.Sender;
 		obj.SetLinearVelocity(new Vector2(0, 15));
@@ -1135,52 +1155,56 @@ private void Tick_Spell_Teleport(){
 }
 
 private void CheckGameover(){
-	if (Game.GetActiveUsers().Length < 2) return;
+	if (Game.GetActiveUsers().Length < 2){
+		IPlayer[] plys = Game.GetPlayers();
+		if (plys.Length == 0 || plys[0].IsDead) Game.SetGameOver("You died");
+		return;
+	} else {
+		List <PlayerTeam> teams = new List<PlayerTeam>();
+		String winner = "";
 
-	List <PlayerTeam> teams = new List<PlayerTeam>();
-	String winner = "";
+		foreach (PlayerData data in players)
+			if (!data.Player.IsRemoved && !data.Player.IsDead && !teams.Contains(data.Team)) teams.Add(data.Team);
+		
+		foreach (SpellsData_MindControl MindData in controlledPlayers){
+			PlayerData contData = MindData.ControllerData;
+			if (UserStillHere(contData.User) && !teams.Contains(contData.Team)) teams.Add(contData.Team);
+		}
 
-	foreach (PlayerData data in players)
-		if (!data.Player.IsRemoved && !data.Player.IsDead && !teams.Contains(data.Team)) teams.Add(data.Team);
-	
-	foreach (SpellsData_MindControl MindData in controlledPlayers){
-		PlayerData contData = MindData.ControllerData;
-		if (UserStillHere(contData.User) && !teams.Contains(contData.Team)) teams.Add(contData.Team);
-	}
-
-	switch (teams.Count){
-		case 5:
-			Game.ShowPopupMessage("Wut?");
-			break;
-		case 4:
-		case 3:
-		case 2:
-			return;
-		case 1:
-			if (teams[0] != PlayerTeam.Independent){
-				switch (teams[0]) {
-					case PlayerTeam.Team1 : winner = "Blue team"; break;
-					case PlayerTeam.Team2 : winner = "Red team"; break;
-					case PlayerTeam.Team3 : winner = "Green team"; break;
-					case PlayerTeam.Team4 : winner = "Yellow team"; break;
+		switch (teams.Count){
+			case 5:
+				Game.ShowPopupMessage("Wut?");
+				break;
+			case 4:
+			case 3:
+			case 2:
+				return;
+			case 1:
+				if (teams[0] != PlayerTeam.Independent){
+					switch (teams[0]) {
+						case PlayerTeam.Team1 : winner = "Blue team"; break;
+						case PlayerTeam.Team2 : winner = "Red team"; break;
+						case PlayerTeam.Team3 : winner = "Green team"; break;
+						case PlayerTeam.Team4 : winner = "Yellow team"; break;
+					}
+				} else {
+					List <IPlayer> plysAlive = new List<IPlayer>();
+					foreach (IPlayer ply in Game.GetPlayers())
+						if (!ply.IsDead) plysAlive.Add(ply);
+					foreach (SpellsData_MindControl MindData in controlledPlayers){
+						PlayerData contData = MindData.ControllerData;
+						if (UserStillHere(contData.User)) plysAlive.Add(contData.Player);
+					}
+					if (plysAlive.Count == 1)
+						winner = plysAlive[0].GetProfile().Name;
+					else return;
 				}
-			} else {
-				List <IPlayer> plysAlive = new List<IPlayer>();
-				foreach (IPlayer ply in Game.GetPlayers())
-					if (!ply.IsDead) plysAlive.Add(ply);
-				foreach (SpellsData_MindControl MindData in controlledPlayers){
-					PlayerData contData = MindData.ControllerData;
-					if (UserStillHere(contData.User)) plysAlive.Add(contData.Player);
-				}
-				if (plysAlive.Count == 1)
-					winner = plysAlive[0].GetProfile().Name;
-				else return;
-			}
-			Game.SetGameOver(winner + " wins!");
-			break;
-		case 0:
-			Game.SetGameOver("Draw");
-			break;
+				Game.SetGameOver(winner + " wins!");
+				break;
+			case 0:
+				Game.SetGameOver("Draw");
+				break;
+		}
 	}
 }
 
