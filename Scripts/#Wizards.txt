@@ -202,7 +202,6 @@ string[] restrictedWeapons = new string[]{
 	"WPNREVOLVER",
 	"WPNGRENADELAUNCHER",
 	"WPNM60",
-	"WPNGRENADESTHROWN",
 	"WPNMOLOTOVSTHROWN"
 };
 // additional array for weapons that can be dropped so players could not "generate pickups"
@@ -211,6 +210,7 @@ string[] restrictedWeapons2 = new string[]{
 	"WPNSUBMACHINEGUN",
 	"WPNUZI",
 	"WPNSMG",
+	"WPNGRENADESTHROWN",
 	"WPNGRENADES"
 };
 string[] replacingWeapons = new string[]{
