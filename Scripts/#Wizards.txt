@@ -202,6 +202,7 @@ string[] restrictedWeapons = new string[]{
 	"WPNREVOLVER",
 	"WPNGRENADELAUNCHER",
 	"WPNM60",
+	"WPNGRENADESTHROWN",
 	"WPNMOLOTOVSTHROWN"
 };
 // additional array for weapons that can be dropped so players could not "generate pickups"
@@ -210,7 +211,6 @@ string[] restrictedWeapons2 = new string[]{
 	"WPNSUBMACHINEGUN",
 	"WPNUZI",
 	"WPNSMG",
-	"WPNGRENADESTHROWN",
 	"WPNGRENADES"
 };
 string[] replacingWeapons = new string[]{
@@ -531,7 +531,7 @@ private void Tick_Projectiles(){
 		if (projs[i].UnFreezeTime != 0f && projs[i].UnFreezeTime <= Game.TotalElapsedGameTime && projs[i].ProjObject.GetBodyType() == BodyType.Static)
 			projs[i].ProjObject.SetBodyType(BodyType.Dynamic);
 		// smoking objects will create smoke here
-		if(projs[i].SmokingAmount != 0 && !projs[i].IsRemoved){
+		if(projs[i].SmokingAmount != 0 && !projs[i].ProjObject.IsRemoved){
 			Vector2 pos = projs[i].ProjObject.GetWorldPosition();
 			short radius = projs[i].SmokingRadius;
 			for (int j = 0; j < projs[i].SmokingAmount; j++)
