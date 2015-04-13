@@ -531,7 +531,7 @@ private void Tick_Projectiles(){
 		if (projs[i].UnFreezeTime != 0f && projs[i].UnFreezeTime <= Game.TotalElapsedGameTime && projs[i].ProjObject.GetBodyType() == BodyType.Static)
 			projs[i].ProjObject.SetBodyType(BodyType.Dynamic);
 		// smoking objects will create smoke here
-		if(projs[i].SmokingAmount != 0){
+		if(projs[i].SmokingAmount != 0 && !projs[i].IsRemoved){
 			Vector2 pos = projs[i].ProjObject.GetWorldPosition();
 			short radius = projs[i].SmokingRadius;
 			for (int j = 0; j < projs[i].SmokingAmount; j++)
