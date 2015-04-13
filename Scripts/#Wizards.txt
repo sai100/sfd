@@ -841,7 +841,10 @@ private void SpellUsed(PlayerData data){
 		break;
 	case "Teleport":
 		{
-			Vector2 pos = ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 70f, 10f);
+			Vector2 pos = Vector2.Zero;
+			if (ply.IsWalking && ply.IsJumpAttacking) pos = ply.GetWorldPosition() + new Vector2(0f, 50f);
+			else if (ply.IsWalking) pos = ply.GetWorldPosition() + new Vector2(0f, -28f);
+			else pos = ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 70f, 10f);
 			IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
 				"AreaTrigger",
 				pos,
@@ -851,7 +854,7 @@ private void SpellUsed(PlayerData data){
 			areaTrigger.SetScriptMethod("SpellTrigger_Teleport");
 			// make it dynamic to allow detecting static objects
 			areaTrigger.SetBodyType(BodyType.Dynamic);
-			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 50f));
+			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 10f));
 		}
 		break;
 	case "SUICIDE":
@@ -861,23 +864,25 @@ private void SpellUsed(PlayerData data){
 		break;
 	case "Tarot Card" :
 		Vector2 posCard = ply.GetWorldPosition() + new Vector2 (ply.FacingDirection*8f, 5f);
-		switch ( rand.Next(78)) {
-			case 77 : {
+		switch ( rand.Next(35)) {
+			case 0 : {
 				Game.SpawnProjectile (ProjectileItem.SNIPER, posCard, new Vector2(ply.FacingDirection,0f));
 				Game.PlayEffect("PWT", ply.GetWorldPosition(), "The fool");
 				Game.PlaySound("Flaregun", ply.GetWorldPosition(), 50f);
+				Game.PlayEffect("Electric", ply.GetWorldPosition() + new Vector2(0, 8f));
 				break;
 			}
-			case 76 : {
+			case 1 : {
 				Game.SpawnProjectile (ProjectileItem.REVOLVER, posCard, new Vector2(ply.FacingDirection,0f));
 				Game.PlayEffect("PWT", ply.GetWorldPosition(), "The magician");
 				Game.PlaySound("ItemSpawn", ply.GetWorldPosition(), 50f);
 				usedNow = false;
 				data.Mana += 10;
 				data.LastUseTime = 0f; 
+				Game.PlayEffect("Electric", ply.GetWorldPosition() + new Vector2(0, 8f));
 				break;
 			}
-			case 75 : {
+			case 2 : {
 				Game.SpawnProjectile (ProjectileItem.REVOLVER, posCard, new Vector2(ply.FacingDirection,0f));
 				Game.PlayEffect("PWT", ply.GetWorldPosition(), "The judgment");
 				Game.PlaySound("ElevatorDing", ply.GetWorldPosition(), 50f);
@@ -885,6 +890,7 @@ private void SpellUsed(PlayerData data){
 				float healAmount = 9f;
 				if (ply.GetHealth() > 50f - healAmount)data.AddedHealth += 50f - ply.GetHealth();
 				else data.AddedHealth += healAmount;
+				Game.PlayEffect("Electric", ply.GetWorldPosition() + new Vector2(0, 8f));
 				break;
 			}
 			default : {
@@ -1258,8 +1264,8 @@ private void GiveBasicSpells(PlayerData data){
 	{	// destruction spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 		temp.Add(new PlayerData.BookData.SpellData("FirePunch", 40f, 1000f));
-		temp.Add(new PlayerData.BookData.SpellData("FireBall", 30f, 1000f));
-		temp.Add(new PlayerData.BookData.SpellData("Paper", 25f, 500f));
+//		temp.Add(new PlayerData.BookData.SpellData("FireBall", 30f, 1000f));
+		temp.Add(new PlayerData.BookData.SpellData("Paper", 40f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Crate of doom", 60f, 10000f));
 		temp.Add(new PlayerData.BookData.SpellData("ANVIL", 40f, 5000f));
 		temp.Add(new PlayerData.BookData.SpellData("SUICIDE", 125f, 0f));
@@ -1280,9 +1286,9 @@ private void GiveBasicSpells(PlayerData data){
 	{	// alteration spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 		temp.Add(new PlayerData.BookData.SpellData("FUS RO DAH", 90f, 15000f));
-		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 65f, 8000f));
-		temp.Add(new PlayerData.BookData.SpellData("Teleport", 80f, 1000f));
 		temp.Add(new PlayerData.BookData.SpellData("SuperJump", 30f, 1000f));
+		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 65f, 8000f));
+		temp.Add(new PlayerData.BookData.SpellData("Teleport", 60f, 1000f));
 
 		data.Books.Add(new PlayerData.BookData("Alteration", temp));
 	}
