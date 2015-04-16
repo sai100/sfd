@@ -119,27 +119,13 @@ private class ProjData {
 	public float DeSpawnTime = 0f;
 	public float UnFreezeTime = 0f;
 	public bool Explosive = false;
-	public string explosionId = "";
+	public string ExplosionType = "";
 	public short SmokingAmount = 0;
 	public short SmokingRadius = 6;
 
 	public ProjData (IObject obj, float time){
  		this.ProjObject = obj;
  		this.DeSpawnTime = time;
-	}
-
-	public ProjData (IObject obj, float time, bool explode, float unfreeze){
-		this.ProjObject = obj;
-		this.DeSpawnTime = time;
-		this.Explosive = explode;
-		this.UnFreezeTime = unfreeze;
-	}
-
-	public ProjData (IObject obj, float time, bool explode, string ExplosionId){
-		this.ProjObject = obj;
-		this.DeSpawnTime = time;
-		this.Explosive = explode;
-		this.explosionId = ExplosionId;
 	}
 }
 
@@ -546,7 +532,7 @@ private void Tick_Projectiles(){
 		if (projs[i].UnFreezeTime != 0f && projs[i].UnFreezeTime <= Game.TotalElapsedGameTime && projs[i].ProjObject.GetBodyType() == BodyType.Static)
 			projs[i].ProjObject.SetBodyType(BodyType.Dynamic);
 		// smoking objects will create smoke here
-		if(projs[i].SmokingAmount != 0){
+		if(projs[i].SmokingAmount > 0){
 			Vector2 pos = projs[i].ProjObject.GetWorldPosition();
 			short radius = projs[i].SmokingRadius;
 			for (int j = 0; j < projs[i].SmokingAmount; j++)
@@ -554,12 +540,7 @@ private void Tick_Projectiles(){
 		}
 		// objects die here
 		if (Game.TotalElapsedGameTime  >= projs[i].DeSpawnTime){
-			if (!projs[i].ProjObject.IsRemoved && projs[i].explosionId == ""){
-			}else if(projs[i].ProjObject != null && !projs[i].ProjObject.IsRemoved)customEx(projs[i]);
-			/*{
-				if (projs[i].ProjObject.CustomId == "PushBlock") projs[i].ProjObject.Remove();
-				else if (projs[i].ProjObject.CustomId != "PushBlock") projs[i].ProjObject.Destroy();
-			}*/
+			if (!projs[i].ProjObject.IsRemoved && projs[i].Explosive) TriggerExplosion(projs[i]);
 			projs[i].ProjObject.Remove();
 			projs.RemoveAt(i);
 		}
@@ -692,10 +673,10 @@ private void SpellUsed(PlayerData data){
 			Game.PlayEffect("Electric", pos);
 			ProjData projData = new ProjData(proj, Game.TotalElapsedGameTime + 1500f);
 			projData.Explosive = true;
+			projData.ExplosionType = "basic";
 			projData.SmokingAmount = 2;
 			projData.SmokingRadius = 2;
 			projs.Add(projData);
-			projs.Add(new ProjData(proj, Game.TotalElapsedGameTime + 1500f, true, "paper"));
 		}
 		break;
 	case "bottle":
@@ -708,7 +689,10 @@ private void SpellUsed(PlayerData data){
 			new Vector2(ply.FacingDirection * 10, 3),
 			(float)rand.Next(-30, 30));
 			Game.PlayEffect("Electric", pos);
-			projs.Add(new ProjData(proj, Game.TotalElapsedGameTime + 800f, true, "bottle"));
+			ProjData projData = new ProjData(proj, Game.TotalElapsedGameTime + 800f);
+			projData.Explosive = true;
+			projData.ExplosionType = "fire_big";
+			projs.Add(projData);
 		}
 		break;
 	case "Balloon":
@@ -721,7 +705,10 @@ private void SpellUsed(PlayerData data){
 			new Vector2(ply.FacingDirection * 5, 3),
 			(float)rand.Next(-30, 30));
 			Game.PlayEffect("Electric", pos);
-			projs.Add(new ProjData(proj, Game.TotalElapsedGameTime + 1500f, true, "balloon"));
+			ProjData projData = new ProjData(proj, Game.TotalElapsedGameTime + 1000f);
+			projData.Explosive = true;
+			projData.ExplosionType = "cluster";
+			projs.Add(projData);
 		}
 		break;
 	case "ANVIL":
@@ -976,50 +963,56 @@ private void SpellUsed(PlayerData data){
 	if (SPELL_COOLDOWN_ACTIVATED && usedNow) data.Books[data.BookId].Spells[data.SpellId].LastUseTime = Game.TotalElapsedGameTime;
 }
 
-private void customEx(ProjData proj){
-	switch(proj.explosionId){
-		case "bottle":
-			float X = rand.Next(314)/100;
-			Game.SpawnFireNodes(
-				new Vector2(proj.ProjObject.GetWorldPosition().X/25, proj.ProjObject.GetWorldPosition().Y/25),
-				80,
-				new Vector2((float)Math.Cos(X) * 20, (float)Math.Sin(X) * 20),
-				0.1f,
-				0.1f,
-				FireNodeType.Flamethrower);
+private void TriggerExplosion(ProjData proj){
+	if (proj.Explosive){
+		switch(proj.ExplosionType){
+			case "fire_big":
+				float X = rand.Next(314)/100;
+				Game.SpawnFireNodes(
+					new Vector2(proj.ProjObject.GetWorldPosition().X/25, proj.ProjObject.GetWorldPosition().Y/25),
+					80,
+					new Vector2((float)Math.Cos(X) * 20, (float)Math.Sin(X) * 20),
+					0.1f,
+					0.1f,
+					FireNodeType.Flamethrower);
 
-			Game.SpawnFireNodes(
-				new Vector2(proj.ProjObject.GetWorldPosition().X/25, proj.ProjObject.GetWorldPosition().Y/25),
-				80,
-				new Vector2(-(float)Math.Cos(X) * 20, -(float)Math.Sin(X) * 20),
-				0.1f,
-				0.1f,
-				FireNodeType.Flamethrower);
+				Game.SpawnFireNodes(
+					new Vector2(proj.ProjObject.GetWorldPosition().X/25, proj.ProjObject.GetWorldPosition().Y/25),
+					80,
+					new Vector2(-(float)Math.Cos(X) * 20, -(float)Math.Sin(X) * 20),
+					0.1f,
+					0.1f,
+					FireNodeType.Flamethrower);
 
-			Game.TriggerExplosion(proj.ProjObject.GetWorldPosition());
-			Game.TriggerFireplosion(proj.ProjObject.GetWorldPosition(), 10f);
-		break;
+				Game.TriggerExplosion(proj.ProjObject.GetWorldPosition());
+				Game.TriggerFireplosion(proj.ProjObject.GetWorldPosition(), 10f);
+			break;
 
-		case "balloon":
-			for(int i = 1; i<=3; i++){
-				Vector2 vel = Vector2.Zero;
-				if(i == 1) vel = new Vector2(-5f , 5f);else if(i == 2)vel = new Vector2(0 , 5f);else vel = new Vector2(5f, 0f);
-				Vector2 pos = proj.ProjObject.GetWorldPosition();
-				IObject obj = Game.CreateObject(
-				"CrumpledPaper00",
-				pos,
-				0f,
-				vel,
-				(float)rand.Next(-30, 30));
-				projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 1500f, true, "paper"));
-			}
-		break;
+			case "cluster":
+				for(int i = 0; i <= 3; i++){
+					Vector2 vel = new Vector2((float)rand.Next(-10,10), (float)rand.Next(2,10));
+					Vector2 pos = proj.ProjObject.GetWorldPosition();
+					IObject obj = Game.CreateObject(
+						"CrumpledPaper00",
+						pos,
+						0f,
+						vel,
+						(float)rand.Next(-30, 30));
+					ProjData projData = new ProjData(obj, Game.TotalElapsedGameTime + (float)(rand.Next(10,20)) * 100f);
+					projData.Explosive = true;
+					projData.ExplosionType = "basic";
+					projData.SmokingAmount = 2;
+					projData.SmokingRadius = 2;
+					projs.Add(projData);
+					Game.PlaySound("Break", pos, 50f);
+				}
+			break;
 
-		case "paper":
-			Game.TriggerExplosion(proj.ProjObject.GetWorldPosition());
-		break;
-
-		default: break;
+			case "basic":
+			default:
+				Game.TriggerExplosion(proj.ProjObject.GetWorldPosition());
+			break;
+		}
 	}
 }
 
@@ -1359,7 +1352,7 @@ private void GiveBasicSpells(PlayerData data){
 //		temp.Add(new PlayerData.BookData.SpellData("FireBall", 30f, 1000f));
 		temp.Add(new PlayerData.BookData.SpellData("Paper", 40f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("bottle", 30f, 500f));
-		temp.Add(new PlayerData.BookData.SpellData("Balloon", 60f, 500f));
+		temp.Add(new PlayerData.BookData.SpellData("Balloon", 70f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Crate of doom", 60f, 10000f));
 		temp.Add(new PlayerData.BookData.SpellData("ANVIL", 40f, 5000f));
 		temp.Add(new PlayerData.BookData.SpellData("SUICIDE", 125f, 0f));
