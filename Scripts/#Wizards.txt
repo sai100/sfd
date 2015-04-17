@@ -71,6 +71,7 @@ private class PlayerData {
 	public float LastUseTime = 0f;
 	public float LastPushedTime = 0f;
 	public bool IsFrozen = false;
+	public float Poison = 0f;
 	public float UnFreezeTime = 0f;
 	
 	public float StartHealth = 50f;
@@ -494,6 +495,20 @@ private void Tick_Stats(){
 		// mana pickups
 		if (ply.GetHealth() > data.LastHealth)
 			data.Mana += ply.GetHealth() - data.LastHealth;
+
+		//poison
+		if(data.Poison != 0){
+			if(data.Poison > ply.GetHealth()){
+				data.Poison = 0f;
+				ply.Kill();
+			}
+			else if (data.Poison > 0f){
+				data.AddedHealth -= data.Poison;
+				data.Poison -= 0.05f;
+				if (rand.Next(5) == 0) Game.PlayEffect("ACS", ply.GetWorldPosition() + new Vector2(0f,2f));
+			}
+			if(data.Poison < 0f) data.Poison = 0f;
+		}
 
 		// damage
 		if (ply.GetUser() != null) ply.SetHealth(data.StartHealth -
@@ -938,6 +953,19 @@ private void SpellUsed(PlayerData data){
 				projs.Add(proj);
 		}
 		break;
+	case "Riot Control" : 
+			IObject objCan = Game.CreateObject(
+				"CrabCan00",
+				ply.GetWorldPosition() + new Vector2(ply.FacingDirection*8f,4f),
+				0f,
+				new Vector2(ply.FacingDirection*10f,3f),
+				3f);
+			ProjData projCan = new ProjData(objCan, Game.TotalElapsedGameTime + 3000f);
+			projCan.Explosive = true;
+			projCan.ExplosionType = "poison_gaz";
+			projCan.SmokingAmount = 1;
+			projs.Add(projCan);
+	break;
 	/*case "BALLOONS!":
 		for (int i = 0; i < 3; i++){
 			IObject proj = Game.CreateObject(
@@ -1006,6 +1034,25 @@ private void TriggerExplosion(ProjData proj){
 					projs.Add(projData);
 					Game.PlaySound("Break", pos, 50f);
 				}
+			break;
+
+			case "poison_gaz" : {
+				Vector2 pos = proj.ProjObject.GetWorldPosition();
+				for (int z = -3; z<=3; z++){
+					for (int y = -3; y<= 3; y++){
+						IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
+							"AreaTrigger",
+							pos + new Vector2((z*8f), (y*8f)),
+							0
+						));
+						areaTrigger.SetScriptMethod("SpellTrigger_Poison");
+						projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 1000f));
+					}
+				}
+				proj.ProjObject.Destroy();
+				for (int j = 0; j < 50; j++)
+				Game.PlayEffect("TR_D", pos + new Vector2(rand.Next(-20,20), rand.Next(-20,20)));
+			}
 			break;
 
 			case "basic":
@@ -1245,6 +1292,16 @@ private void Tick_Spell_Teleport(){
 	}
 }
 
+public void SpellTrigger_Poison(TriggerArgs args){
+	if(args.Sender is IPlayer){
+		if (((IPlayer)args.Sender).GetUser() != null && !((IPlayer)args.Sender).IsDead){
+			PlayerData data = GetPlayerData((IPlayer)args.Sender);
+			data.Poison = 1.5f;
+			Game.PlayEffect("PWT",((IPlayer)args.Sender).GetWorldPosition(),"POISONED!");
+		}
+	}
+}
+
 private void CheckGameover(){
 	if (Game.GetActiveUsers().Length < 2){
 		IPlayer[] plys = Game.GetPlayers();
@@ -1383,6 +1440,7 @@ private void GiveBasicSpells(PlayerData data){
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 		temp.Add(new PlayerData.BookData.SpellData("Mind Lock", 100f, 20000f));
 		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 150f, 40000f));
+		temp.Add(new PlayerData.BookData.SpellData("Riot Control", 50f, 1000f));
 
 		data.Books.Add(new PlayerData.BookData("Controlling", temp));
 	}
