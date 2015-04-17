@@ -1050,7 +1050,7 @@ private void TriggerExplosion(ProjData proj){
 					}
 				}
 				proj.ProjObject.Destroy();
-				for (int j = 0; j < 50; j++)
+				for (int j = 0; j < 30; j++)
 				Game.PlayEffect("TR_D", pos + new Vector2(rand.Next(-20,20), rand.Next(-20,20)));
 			}
 			break;
