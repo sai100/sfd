@@ -868,21 +868,11 @@ private void SpellUsed(PlayerData data){
 	case "SuperJump":
 		{
 			if (!ply.IsInMidAir){
-				//for (int i = 0; i <= 2; i++){
-					ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
-					IObject obj = Game.CreateObject("InvisiblePlatform",
-						ply.GetWorldPosition() + new Vector2(0f, -8f),
-						0);
-					obj.SetBodyType(BodyType.Dynamic);
-					obj.SetLinearVelocity(new Vector2(0, 13f));
-					obj.SetAngularVelocity((-1) * ply.FacingDirection * 4f);
-					projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f));
-					for (int j = 0; j < 18; j++) Game.PlayEffect("TR_D", ply.GetWorldPosition() + new Vector2(rand.Next(-12,12), rand.Next(-2,2)));
-				//}
-			Game.PlayEffect("CAM_S", Vector2.Zero, 1f, 500f, true);
-			}
-			else Game.PlayEffect("PWT", ply.GetWorldPosition(), "I can't reach the ground!");
+				ply.SetLinearVelocity(new Vector2(ply.FacingDirection*2f,12f));
+				Game.PlayEffect("CAM_S", Vector2.Zero, 1f, 500f, true);
+			} else Game.PlayEffect("PWT", ply.GetWorldPosition(), "I can't reach the ground!");
 		}
+
 		break;
 	case "Teleport":
 		{
@@ -1050,7 +1040,7 @@ private void TriggerExplosion(ProjData proj){
 					}
 				}
 				proj.ProjObject.Destroy();
-				for (int j = 0; j < 30; j++)
+				for (int j = 0; j < 50; j++)
 				Game.PlayEffect("TR_D", pos + new Vector2(rand.Next(-20,20), rand.Next(-20,20)));
 			}
 			break;
@@ -1089,7 +1079,8 @@ public void SpellTrigger_FusRoDah_Right(TriggerArgs args){
 		IPlayer ply = (IPlayer)args.Sender;
 
 		// side
-		ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
+		
+		/* ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
 		IObject obj = Game.CreateObject("InvisibleBlock",
 			ply.GetWorldPosition() + new Vector2(-6, 0),
 			-1.2f);
@@ -1097,12 +1088,15 @@ public void SpellTrigger_FusRoDah_Right(TriggerArgs args){
 //		obj.SetStickyFeet(true);
 		obj.SetLinearVelocity(new Vector2(12, 8));
 		obj.CustomId = "PushBlock";
-		projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f));
+		projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f));*/
+	
+		ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
+		ply.SetLinearVelocity(new Vector2(15f, 3f));
 
 		Game.PlayEffect("TR_D", ply.GetWorldPosition() + new Vector2(rand.Next(4,16), rand.Next(4,16)));
 	} else if (args.Sender is IObject){
 		IObject obj = (IObject)args.Sender;
-		obj.SetLinearVelocity(new Vector2(15, 2));
+		obj.SetLinearVelocity(new Vector2(15f, 2f));
 		for (int i = 0; i < 8; i++)
 			Game.PlayEffect("TR_D", obj.GetWorldPosition() + new Vector2(rand.Next(4,16), rand.Next(-6,6)));
 	}
@@ -1113,7 +1107,7 @@ public void SpellTrigger_FusRoDah_Left(TriggerArgs args){
 		IPlayer ply = (IPlayer)args.Sender;
 
 		// side
-		ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
+		/* ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
 		IObject obj = Game.CreateObject("InvisibleBlock",
 			ply.GetWorldPosition() + new Vector2(6, 0),
 			1.2f);
@@ -1121,12 +1115,15 @@ public void SpellTrigger_FusRoDah_Left(TriggerArgs args){
 //		obj.SetStickyFeet(true);
 		obj.SetLinearVelocity(new Vector2(-12, 8));
 		obj.CustomId = "PushBlock";
-		projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f));
+		projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f));*/
+
+		ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
+		ply.SetLinearVelocity(new Vector2(-15f, 3f));
 
 		Game.PlayEffect("TR_D", ply.GetWorldPosition() + new Vector2(rand.Next(-16,4), rand.Next(4,16)));
 	} else if (args.Sender is IObject){
 		IObject obj = (IObject)args.Sender;
-		obj.SetLinearVelocity(new Vector2(-15, 2));
+		obj.SetLinearVelocity(new Vector2(-15f, 2f));
 		for (int i = 0; i < 8; i++)
 			Game.PlayEffect("TR_D", obj.GetWorldPosition() + new Vector2(rand.Next(4,16), rand.Next(-6,6)));
 	}
@@ -1135,15 +1132,10 @@ public void SpellTrigger_FusRoDah_Left(TriggerArgs args){
 public void SpellTrigger_ToTheMoon(TriggerArgs args){
 	if (args.Sender is IPlayer){
 		IPlayer ply = (IPlayer)args.Sender;
-		IObject obj = Game.CreateObject("InvisibleBlock",
-			ply.GetWorldPosition() + new Vector2(0f, -8f),
-			0);
-		obj.SetBodyType(BodyType.Dynamic);
-		obj.SetLinearVelocity(new Vector2(0, 10f));
-		projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 200f));
+		ply.SetLinearVelocity(new Vector2(0,14f));
 	} else if (args.Sender is IObject){
 		IObject obj = (IObject)args.Sender;
-		obj.SetLinearVelocity(new Vector2(0, 15));
+		obj.SetLinearVelocity(new Vector2(0, 14f));
 		for (int i = 0; i < 8; i++)
 			Game.PlayEffect("TR_D", obj.GetWorldPosition() + new Vector2(rand.Next(-6,6), rand.Next(4,16)));
 	}
@@ -1284,6 +1276,7 @@ private void Tick_Spell_Teleport(){
 			if (data.Allowed){
 				Game.PlayEffect("Electric", data.Player.GetWorldPosition() + new Vector2(0, 8f));
 				data.Player.SetWorldPosition(data.Position);
+				data.Player.SetLinearVelocity(new Vector2(0f,0f));
 				Game.PlayEffect("Electric", data.Player.GetWorldPosition() + new Vector2(0, 8f));
 				players[GetPlayerDataIndex(data.Player)].NextUseTime = Game.TotalElapsedGameTime + 2000f;
 			}
@@ -1408,7 +1401,7 @@ private void GiveBasicSpells(PlayerData data){
 		temp.Add(new PlayerData.BookData.SpellData("FirePunch", 40f, 1000f));
 //		temp.Add(new PlayerData.BookData.SpellData("FireBall", 30f, 1000f));
 		temp.Add(new PlayerData.BookData.SpellData("Paper", 40f, 500f));
-		temp.Add(new PlayerData.BookData.SpellData("bottle", 30f, 500f));
+		temp.Add(new PlayerData.BookData.SpellData("bottle", 60f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Balloon", 70f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Crate of doom", 60f, 10000f));
 		temp.Add(new PlayerData.BookData.SpellData("ANVIL", 40f, 5000f));
