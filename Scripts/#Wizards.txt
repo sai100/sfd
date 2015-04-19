@@ -647,7 +647,7 @@ private void SpellUsed(PlayerData data){
 	switch(data.Books[data.BookId].Spells[data.SpellId].Name){
 	case "FirePunch":
 		Game.SpawnFireNodes(
-			(ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 10, 10)) / 25,
+			ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 10, 10),
 			12,
 			new Vector2(ply.FacingDirection * 6, 0),
 			1,
@@ -656,7 +656,7 @@ private void SpellUsed(PlayerData data){
 		break;
 	case "FireBall":
 		Game.SpawnFireNodes(
-			(ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 6, 10)) / 25,
+			ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 6, 10),
 			80,
 			new Vector2(ply.FacingDirection * 20, 0),
 			0.1f,
@@ -987,7 +987,7 @@ private void TriggerExplosion(ProjData proj){
 			case "fire_big":
 				float X = rand.Next(314)/100;
 				Game.SpawnFireNodes(
-					new Vector2(proj.ProjObject.GetWorldPosition().X/25, proj.ProjObject.GetWorldPosition().Y/25),
+					new Vector2(proj.ProjObject.GetWorldPosition().X, proj.ProjObject.GetWorldPosition().Y),
 					80,
 					new Vector2((float)Math.Cos(X) * 20, (float)Math.Sin(X) * 20),
 					0.1f,
@@ -995,7 +995,7 @@ private void TriggerExplosion(ProjData proj){
 					FireNodeType.Flamethrower);
 
 				Game.SpawnFireNodes(
-					new Vector2(proj.ProjObject.GetWorldPosition().X/25, proj.ProjObject.GetWorldPosition().Y/25),
+					new Vector2(proj.ProjObject.GetWorldPosition().X, proj.ProjObject.GetWorldPosition().Y),
 					80,
 					new Vector2(-(float)Math.Cos(X) * 20, -(float)Math.Sin(X) * 20),
 					0.1f,
@@ -1040,7 +1040,7 @@ private void TriggerExplosion(ProjData proj){
 					}
 				}
 				proj.ProjObject.Destroy();
-				for (int j = 0; j < 50; j++)
+				for (int j = 0; j < 30; j++)
 				Game.PlayEffect("TR_D", pos + new Vector2(rand.Next(-20,20), rand.Next(-20,20)));
 			}
 			break;
