@@ -51,7 +51,7 @@ private string [] ONSTART_TEXT = new string []{
 	"Migth and Magic!", 
 	"Have you heard about Gwandalf the pilgrim?",
 	"Don't SPELL it wrong! Get it?",
-	"Pro tip: use suicide spell NOW!", 
+	"Pro tip: use fireworks spell NOW!", 
 	"It's like a charm",
 	"(Battleground)spell. It casts a spell to battleground",
 	"HADOUKEN! Uhh, wrong game.",
@@ -297,10 +297,10 @@ public void MidTick(TriggerArgs args){
 	Tick_Stats();
 	Tick_Controls();
 	Tick_Projectiles();
+	Tick_Spell_MindControl();
 }
 
 public void SlowTick(TriggerArgs args){
-	Tick_Spell_MindControl();
 	Tick_PopupMessage();
 	Tick_Weapons();
 }
@@ -467,6 +467,9 @@ private void Tick_Controls(){
 			// spell using
 			if ((ply.IsMeleeAttacking || ply.IsJumpAttacking) && (data.NextUseTime <= Game.TotalElapsedGameTime) && Game.TotalElapsedGameTime > 3000f){
 				PlayerData.BookData.SpellData spellData = data.Books[data.BookId].Spells[data.SpellId];
+
+				// "multiple uses in one time"-protection
+				data.NextUseTime = Game.TotalElapsedGameTime + 500f;
 				if (spellData.LastUseTime + spellData.Cooldown <= Game.TotalElapsedGameTime){
 					if (data.Mana >= spellData.ManaCost) SpellUsed(data);
 					// insufficient mana
@@ -480,8 +483,6 @@ private void Tick_Controls(){
 							cooldownLeft.ToString() + " sec"
 							);
 				}
-				// "multiple uses in one time"-protection
-				data.NextUseTime = Game.TotalElapsedGameTime + 500f;
 			}
 		}
 	}
@@ -504,11 +505,11 @@ private void Tick_Stats(){
 				ply.Kill();
 			}
 			else if (data.Poison > 0f){
-				data.AddedHealth -= data.Poison;
-				data.Poison -= 0.05f;
-				if (rand.Next(5) == 0) Game.PlayEffect("ACS", ply.GetWorldPosition() + new Vector2(0f,2f));
+				data.AddedHealth -= 0.5f;
+				data.Poison -= 0.5f;
+				if (rand.Next(5) == 0) Game.PlayEffect("ACS", ply.GetWorldPosition() + new Vector2(0f,4f));
 			}
-			if(data.Poison < 0f) data.Poison = 0f;
+			if (data.Poison < 0f) data.Poison = 0f;
 		}
 
 		// damage
@@ -660,8 +661,8 @@ private void SpellUsed(PlayerData data){
 			ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 6, 10),
 			80,
 			new Vector2(ply.FacingDirection * 20, 0),
-			0.1f,
-			0.1f,
+			0.5f,
+			0.5f,
 			FireNodeType.Flamethrower);
 		break;
 	case "Crate of doom":
@@ -695,7 +696,7 @@ private void SpellUsed(PlayerData data){
 			projs.Add(projData);
 		}
 		break;
-	case "bottle":
+	case "Bottle":
 		{
 			Vector2 pos = ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 15, 10);
 			IObject proj = Game.CreateObject(
@@ -705,7 +706,7 @@ private void SpellUsed(PlayerData data){
 			new Vector2(ply.FacingDirection * 10, 3),
 			(float)rand.Next(-30, 30));
 			Game.PlayEffect("Electric", pos);
-			ProjData projData = new ProjData(proj, Game.TotalElapsedGameTime + 800f);
+			ProjData projData = new ProjData(proj, Game.TotalElapsedGameTime + 1500f);
 			projData.Explosive = true;
 			projData.ExplosionType = "fire_big";
 			projs.Add(projData);
@@ -767,10 +768,10 @@ private void SpellUsed(PlayerData data){
 		defender.SetBotType(BotType.TutorialA);
 		defender.SetTeam(defendingTeam);
 		break;
-	case "Block":
+	/*case "Block":
 		IObject grab = Game.CreateObject("Wood03F", ply.GetWorldPosition() + new Vector2(ply.FacingDirection*7, 0), 0);
 		projs.Add(new ProjData(grab, Game.TotalElapsedGameTime + 1200f));
-		break;
+		break;*/
 	case "Shield":
 		{
 			float delay = 3000f;
@@ -894,13 +895,21 @@ private void SpellUsed(PlayerData data){
 			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 10f));
 		}
 		break;
-	case "SUICIDE":
-		for (int i = 0; i < 5; i++) Game.TriggerExplosion(ply.GetWorldPosition() + new Vector2(rand.Next(-40, 40), rand.Next(-40, 40)));
-		ply.Gib();
+	case "Fireworks":
+		Game.SpawnFireNodes(
+			ply.GetWorldPosition() + new Vector2(0f, 4f),
+			12,
+			new Vector2(-ply.FacingDirection * 6, 0),
+			1,
+			2,
+			FireNodeType.Flamethrower);
+		Game.SpawnProjectile (ProjectileItem.BAZOOKA , ply.GetWorldPosition() + new Vector2(-ply.FacingDirection * 8f, 4f), new Vector2(ply.FacingDirection,0f));
+		//for (int i = 0; i < 5; i++) Game.TriggerExplosion(ply.GetWorldPosition() + new Vector2(rand.Next(-40, 40), rand.Next(-40, 40)));
+		//ply.Gib();
 		Game.PlaySound("Wilhelm", ply.GetWorldPosition(), 75f);
 		break;
 	case "Tarot Card" :
-		Vector2 posCard = ply.GetWorldPosition() + new Vector2 (ply.FacingDirection*8f, 5f);
+		Vector2 posCard = ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 10, 10);
 		switch ( rand.Next(35)) {
 			case 0 : {
 				Game.SpawnProjectile (ProjectileItem.SNIPER, posCard, new Vector2(ply.FacingDirection,0f));
@@ -948,7 +957,7 @@ private void SpellUsed(PlayerData data){
 	case "Skunk" : 
 			IObject objCan = Game.CreateObject(
 				"CrabCan00",
-				ply.GetWorldPosition() + new Vector2(ply.FacingDirection*12f, 4f),
+				ply.GetWorldPosition() + new Vector2(ply.FacingDirection*15f, 8f),
 				0f,
 				new Vector2(ply.FacingDirection*5f, 3f),
 				3f);
@@ -1038,7 +1047,7 @@ private void TriggerExplosion(ProjData proj){
 							0
 						));
 						areaTrigger.SetScriptMethod("SpellTrigger_PoisonLight");
-						ProjData projData = new ProjData(areaTrigger, Game.TotalElapsedGameTime + 5000f);
+						ProjData projData = new ProjData(areaTrigger, Game.TotalElapsedGameTime + 8000f);
 						if (x*x + y*y < 4){
 							projData.SmokingAmount = 1;
 							projData.SmokingRadius = 16;
@@ -1139,7 +1148,9 @@ public void SpellTrigger_FusRoDah_Left(TriggerArgs args){
 public void SpellTrigger_ToTheMoon(TriggerArgs args){
 	if (args.Sender is IPlayer){
 		IPlayer ply = (IPlayer)args.Sender;
-		ply.SetLinearVelocity(new Vector2(0,14f));
+//		ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0f, 24f));
+//		ply.SetLinearVelocity(new Vector2(0,-50f));
+		ply.SetLinearVelocity(new Vector2(0f, 15f));
 	} else if (args.Sender is IObject){
 		IObject obj = (IObject)args.Sender;
 		obj.SetLinearVelocity(new Vector2(0, 14f));
@@ -1222,8 +1233,8 @@ private void Tick_Spell_MindControl(){
 			// if player body is removed, delete entry
 			controlledPlayers.RemoveAt(i);
 			CheckGameover();
-			// exit body with walk+block
-		} else if (mindData.EndTime <= Game.TotalElapsedGameTime || (victPlayer.IsWalking && victPlayer.IsBlocking)){
+			// exit body with walk
+		} else if (mindData.EndTime <= Game.TotalElapsedGameTime || (victPlayer.IsWalking && (victPlayer.IsKicking || victPlayer.IsJumpKicking))){
 			Game.PlayEffect("Electric", victPlayer.GetWorldPosition() + new Vector2(0, 8f));
 
 			// if enough time passed, return user
@@ -1296,7 +1307,7 @@ public void SpellTrigger_PoisonLight(TriggerArgs args){
 	if(args.Sender is IPlayer){
 		if (((IPlayer)args.Sender).GetUser() != null && !((IPlayer)args.Sender).IsDead){
 			PlayerData data = GetPlayerData((IPlayer)args.Sender);
-			data.Poison = 2f;
+			data.Poison = 20f;
 			Game.PlayEffect("PWT",((IPlayer)args.Sender).GetWorldPosition(),"POISONED!");
 		}
 	}
@@ -1406,8 +1417,9 @@ private void GiveBasicSpells(PlayerData data){
 	{	// light destruction spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 
-		temp.Add(new PlayerData.BookData.SpellData("Tarot Card", 12f, 200f));
+		temp.Add(new PlayerData.BookData.SpellData("Tarot Card", 20f, 200f));
 		temp.Add(new PlayerData.BookData.SpellData("FirePunch", 40f, 1000f));
+		temp.Add(new PlayerData.BookData.SpellData("FireBall", 30f, 1000f));
 		temp.Add(new PlayerData.BookData.SpellData("ANVIL", 40f, 5000f));
 		temp.Add(new PlayerData.BookData.SpellData("Paper", 40f, 500f));
 
@@ -1416,11 +1428,10 @@ private void GiveBasicSpells(PlayerData data){
 	{	// heavy destruction spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 
-//		temp.Add(new PlayerData.BookData.SpellData("FireBall", 30f, 1000f));
-		temp.Add(new PlayerData.BookData.SpellData("bottle", 65f, 500f));
+		temp.Add(new PlayerData.BookData.SpellData("Bottle", 65f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Balloon", 70f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Crate of doom", 60f, 10000f));
-		temp.Add(new PlayerData.BookData.SpellData("SUICIDE", 125f, 0f));
+		temp.Add(new PlayerData.BookData.SpellData("Fireworks", 125f, 0f));
 		temp.Add(new PlayerData.BookData.SpellData("Skunk", 50f, 1000f));
 
 		data.Books.Add(new PlayerData.BookData("Heavy destruction", temp));
@@ -1428,8 +1439,7 @@ private void GiveBasicSpells(PlayerData data){
 	{	// protection spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 
-		temp.Add(new PlayerData.BookData.SpellData("Heal", 15f, 500f));
-		temp.Add(new PlayerData.BookData.SpellData("Block", 25f, 500f));
+		temp.Add(new PlayerData.BookData.SpellData("Heal", 25f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Cloud", 35f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Shield", 75f, 15000f));
 		temp.Add(new PlayerData.BookData.SpellData("Revive", 100f, 20000f));
@@ -1439,9 +1449,9 @@ private void GiveBasicSpells(PlayerData data){
 	{	// alteration spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
 
-		temp.Add(new PlayerData.BookData.SpellData("FUS", 80f, 15000f));
+		temp.Add(new PlayerData.BookData.SpellData("FUS", 70f, 15000f));
 		temp.Add(new PlayerData.BookData.SpellData("SuperJump", 30f, 1000f));
-		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 65f, 8000f));
+		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 40f, 8000f));
 		temp.Add(new PlayerData.BookData.SpellData("Mind Lock", 100f, 20000f));
 		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 150f, 40000f));
 		temp.Add(new PlayerData.BookData.SpellData("Teleport", 60f, 1000f));
@@ -1451,5 +1461,6 @@ private void GiveBasicSpells(PlayerData data){
 
 	// disabled spells
 //		temp.Add(new PlayerData.BookData.SpellData("Demigod", 75, 10000f));
+//		temp.Add(new PlayerData.BookData.SpellData("Block", 25f, 500f));
 //		temp.Add(new PlayerData.BookData.SpellData("Minion", 100, 30000f));
 }
