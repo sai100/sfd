@@ -1,6 +1,6 @@
 //==================================================================//
 //============<      #BATTLE GAMEMODE BY #OCTOTHORP     >===========//
-//============<                   v1.2                  >===========//
+//============<                   v1.1                  >===========//
 //==================================================================//
 //=====================< OCTOBATTLE - settings >====================//
 //=============================<general>============================//
@@ -61,7 +61,7 @@ private const int EXPLODE_ON_DEATH_DELAY = 5;		    			// Time before the corpse 
 // general mod data
 public class ModData{
 	// we'll add something else later
-	public string Version = "1.2 (testing)";
+	public string Version = "1.1c";
 }
 private ModData modData = new ModData();
 
