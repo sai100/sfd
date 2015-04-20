@@ -31,11 +31,12 @@ private bool HOSTING_ACTIVATED = false;								// set to true to kill host at th
 // general mod data
 private class ModData{
 	// we'll add something else later
-	public string Version = "1.1 (testing)";
+	public string Version = "1.1";
 }
 private ModData modData = new ModData();
 
-private string [] ONDEATH_TEXT = new string []{
+// reserved for commentator
+/*private string [] ONDEATH_TEXT = new string []{
 	"{0} : Fly you fools!",
 	"{0} failed a saving throw.",
 	"{0} wasen't my serf anyway.",
@@ -54,7 +55,7 @@ private string [] ONSTART_TEXT = new string []{
 	"It's like a charm",
 	"(Battleground)spell. It casts a spell to battleground",
 	"HADOUKEN! Uhh, wrong game.",
-	"What kind of sorcery is this?"};
+	"What kind of sorcery is this?"};*/
 
 // general player data
 private class PlayerData {
@@ -393,21 +394,21 @@ private void Tick_Controls(){
 		bool bookChanged = false;
 		// if player is choosing weapon, remove it and add back to prevent from getting it in hands
 		if (!ply.IsDead){
-			if (ply.CurrentWeaponDrawn == WeaponItemType.Handgun){
-				data.BookId = 2;
-				ply.RemoveWeaponItemType(WeaponItemType.Handgun);
-				bookChanged = true;
-			} else if (ply.CurrentWeaponDrawn == WeaponItemType.Rifle){
-				data.BookId = 1;
-				ply.RemoveWeaponItemType(WeaponItemType.Rifle);
-				bookChanged = true;
-			} else if (ply.CurrentWeaponDrawn == WeaponItemType.Thrown){
-				data.BookId = 3;
-				ply.RemoveWeaponItemType(WeaponItemType.Thrown);
-				bookChanged = true;
-			} else if (ply.CurrentWeaponDrawn == WeaponItemType.Melee){
+			if (ply.CurrentWeaponDrawn == WeaponItemType.Melee){
 				data.BookId = 0;
 				ply.RemoveWeaponItemType(WeaponItemType.Melee);
+				bookChanged = true;
+			} else if (ply.CurrentWeaponDrawn == WeaponItemType.Handgun){
+				data.BookId = 1;
+				ply.RemoveWeaponItemType(WeaponItemType.Handgun);
+				bookChanged = true;
+			} else if (ply.CurrentWeaponDrawn == WeaponItemType.Thrown){
+				data.BookId = 2;
+				ply.RemoveWeaponItemType(WeaponItemType.Thrown);
+				bookChanged = true;
+			} else if (ply.CurrentWeaponDrawn == WeaponItemType.Rifle){
+				data.BookId = 3;
+				ply.RemoveWeaponItemType(WeaponItemType.Rifle);
 				bookChanged = true;
 			}
 
@@ -464,7 +465,7 @@ private void Tick_Controls(){
 			}
 
 			// spell using
-			if ((ply.IsMeleeAttacking || ply.IsJumpAttacking) && (data.NextUseTime <= Game.TotalElapsedGameTime) && Game.TotalElapsedGameTime > 4000f){
+			if ((ply.IsMeleeAttacking || ply.IsJumpAttacking) && (data.NextUseTime <= Game.TotalElapsedGameTime) && Game.TotalElapsedGameTime > 3000f){
 				PlayerData.BookData.SpellData spellData = data.Books[data.BookId].Spells[data.SpellId];
 				if (spellData.LastUseTime + spellData.Cooldown <= Game.TotalElapsedGameTime){
 					if (data.Mana >= spellData.ManaCost) SpellUsed(data);
@@ -832,7 +833,7 @@ private void SpellUsed(PlayerData data){
 			projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 150f));
 		}
 		break;
-	case "FUS RO DAH":
+	case "FUS":
 		{
 			for (int i = 0; i <= 2; i++){
 				Vector2 pos = ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 50 + ((i-1)*18), 2f);
@@ -867,10 +868,11 @@ private void SpellUsed(PlayerData data){
 		break;
 	case "SuperJump":
 		{
-			if (!ply.IsInMidAir){
-				ply.SetLinearVelocity(new Vector2(ply.FacingDirection*2f,12f));
-				Game.PlayEffect("CAM_S", Vector2.Zero, 1f, 500f, true);
-			} else Game.PlayEffect("PWT", ply.GetWorldPosition(), "I can't reach the ground!");
+			ply.SetLinearVelocity(new Vector2(ply.FacingDirection*2f,12f));
+			for (int i = 0; i < 10; i++)
+				Game.PlayEffect("TR_D", ply.GetWorldPosition() + new Vector2(rand.Next(-12,12), rand.Next(-4,4)));
+			Game.PlayEffect("CAM_S", Vector2.Zero, 1f, 500f, true);
+			if (ply.IsJumpAttacking) data.NextUseTime = Game.TotalElapsedGameTime + 2500f;
 		}
 
 		break;
@@ -943,14 +945,14 @@ private void SpellUsed(PlayerData data){
 				projs.Add(proj);
 		}
 		break;
-	case "Riot Control" : 
+	case "Skunk" : 
 			IObject objCan = Game.CreateObject(
 				"CrabCan00",
-				ply.GetWorldPosition() + new Vector2(ply.FacingDirection*8f,4f),
+				ply.GetWorldPosition() + new Vector2(ply.FacingDirection*12f, 4f),
 				0f,
-				new Vector2(ply.FacingDirection*10f,3f),
+				new Vector2(ply.FacingDirection*5f, 3f),
 				3f);
-			ProjData projCan = new ProjData(objCan, Game.TotalElapsedGameTime + 3000f);
+			ProjData projCan = new ProjData(objCan, Game.TotalElapsedGameTime + 1500f);
 			projCan.Explosive = true;
 			projCan.ExplosionType = "poison_gaz";
 			projCan.SmokingAmount = 1;
@@ -1028,20 +1030,25 @@ private void TriggerExplosion(ProjData proj){
 
 			case "poison_gaz" : {
 				Vector2 pos = proj.ProjObject.GetWorldPosition();
-				for (int z = -3; z<=3; z++){
-					for (int y = -3; y<= 3; y++){
+				for (int x = -2; x <= 2; x++){
+					for (int y = -2; y <= 2; y++){
 						IObjectTrigger areaTrigger = ((IObjectTrigger)Game.CreateObject(
 							"AreaTrigger",
-							pos + new Vector2((z*8f), (y*8f)),
+							pos + new Vector2((x*10f), (y*10f)),
 							0
 						));
-						areaTrigger.SetScriptMethod("SpellTrigger_Poison");
-						projs.Add(new ProjData(areaTrigger, Game.TotalElapsedGameTime + 1000f));
+						areaTrigger.SetScriptMethod("SpellTrigger_PoisonLight");
+						ProjData projData = new ProjData(areaTrigger, Game.TotalElapsedGameTime + 5000f);
+						if (x*x + y*y < 4){
+							projData.SmokingAmount = 1;
+							projData.SmokingRadius = 16;
+						}
+						projs.Add(projData);
 					}
 				}
 				proj.ProjObject.Destroy();
-				for (int j = 0; j < 30; j++)
-				Game.PlayEffect("TR_D", pos + new Vector2(rand.Next(-20,20), rand.Next(-20,20)));
+				for (int j = 0; j < 10; j++)
+					Game.PlayEffect("TR_D", pos + new Vector2(rand.Next(-8,8), rand.Next(-8,8)));
 			}
 			break;
 
@@ -1073,7 +1080,7 @@ public void SpellTrigger_MindLock(TriggerArgs args){
 	}
 }
 
-// as we can't control players' velocity, we use invisible platforms to push them
+// commented is old player pushing system
 public void SpellTrigger_FusRoDah_Right(TriggerArgs args){
 	if (args.Sender is IPlayer){
 		IPlayer ply = (IPlayer)args.Sender;
@@ -1090,7 +1097,7 @@ public void SpellTrigger_FusRoDah_Right(TriggerArgs args){
 		obj.CustomId = "PushBlock";
 		projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f));*/
 	
-		ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
+		//ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
 		ply.SetLinearVelocity(new Vector2(15f, 3f));
 
 		Game.PlayEffect("TR_D", ply.GetWorldPosition() + new Vector2(rand.Next(4,16), rand.Next(4,16)));
@@ -1117,7 +1124,7 @@ public void SpellTrigger_FusRoDah_Left(TriggerArgs args){
 		obj.CustomId = "PushBlock";
 		projs.Add(new ProjData(obj, Game.TotalElapsedGameTime + 50f));*/
 
-		ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
+		//ply.SetWorldPosition(ply.GetWorldPosition() + new Vector2(0, 10));
 		ply.SetLinearVelocity(new Vector2(-15f, 3f));
 
 		Game.PlayEffect("TR_D", ply.GetWorldPosition() + new Vector2(rand.Next(-16,4), rand.Next(4,16)));
@@ -1285,11 +1292,11 @@ private void Tick_Spell_Teleport(){
 	}
 }
 
-public void SpellTrigger_Poison(TriggerArgs args){
+public void SpellTrigger_PoisonLight(TriggerArgs args){
 	if(args.Sender is IPlayer){
 		if (((IPlayer)args.Sender).GetUser() != null && !((IPlayer)args.Sender).IsDead){
 			PlayerData data = GetPlayerData((IPlayer)args.Sender);
-			data.Poison = 1.5f;
+			data.Poison = 2f;
 			Game.PlayEffect("PWT",((IPlayer)args.Sender).GetWorldPosition(),"POISONED!");
 		}
 	}
@@ -1396,22 +1403,31 @@ private Color GetTeamColor(PlayerTeam team){
 }
 
 private void GiveBasicSpells(PlayerData data){
-	{	// destruction spellbook
+	{	// light destruction spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
+
+		temp.Add(new PlayerData.BookData.SpellData("Tarot Card", 12f, 200f));
 		temp.Add(new PlayerData.BookData.SpellData("FirePunch", 40f, 1000f));
-//		temp.Add(new PlayerData.BookData.SpellData("FireBall", 30f, 1000f));
+		temp.Add(new PlayerData.BookData.SpellData("ANVIL", 40f, 5000f));
 		temp.Add(new PlayerData.BookData.SpellData("Paper", 40f, 500f));
-		temp.Add(new PlayerData.BookData.SpellData("bottle", 60f, 500f));
+
+		data.Books.Add(new PlayerData.BookData("Light destruction", temp));
+	}
+	{	// heavy destruction spellbook
+		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
+
+//		temp.Add(new PlayerData.BookData.SpellData("FireBall", 30f, 1000f));
+		temp.Add(new PlayerData.BookData.SpellData("bottle", 65f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Balloon", 70f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Crate of doom", 60f, 10000f));
-		temp.Add(new PlayerData.BookData.SpellData("ANVIL", 40f, 5000f));
 		temp.Add(new PlayerData.BookData.SpellData("SUICIDE", 125f, 0f));
-		temp.Add(new PlayerData.BookData.SpellData("Tarot Card", 12f, 200f));
+		temp.Add(new PlayerData.BookData.SpellData("Skunk", 50f, 1000f));
 
-		data.Books.Add(new PlayerData.BookData("Destruction", temp));
+		data.Books.Add(new PlayerData.BookData("Heavy destruction", temp));
 	}
 	{	// protection spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
+
 		temp.Add(new PlayerData.BookData.SpellData("Heal", 15f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Block", 25f, 500f));
 		temp.Add(new PlayerData.BookData.SpellData("Cloud", 35f, 500f));
@@ -1422,24 +1438,18 @@ private void GiveBasicSpells(PlayerData data){
 	}
 	{	// alteration spellbook
 		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
-		temp.Add(new PlayerData.BookData.SpellData("FUS RO DAH", 90f, 15000f));
+
+		temp.Add(new PlayerData.BookData.SpellData("FUS", 80f, 15000f));
 		temp.Add(new PlayerData.BookData.SpellData("SuperJump", 30f, 1000f));
 		temp.Add(new PlayerData.BookData.SpellData("To The Moon!", 65f, 8000f));
+		temp.Add(new PlayerData.BookData.SpellData("Mind Lock", 100f, 20000f));
+		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 150f, 40000f));
 		temp.Add(new PlayerData.BookData.SpellData("Teleport", 60f, 1000f));
 
 		data.Books.Add(new PlayerData.BookData("Alteration", temp));
 	}
-	{	// controlling spellbook
-		List<PlayerData.BookData.SpellData> temp = new List<PlayerData.BookData.SpellData>();
-		temp.Add(new PlayerData.BookData.SpellData("Mind Lock", 100f, 20000f));
-		temp.Add(new PlayerData.BookData.SpellData("Mind Control", 150f, 40000f));
-		temp.Add(new PlayerData.BookData.SpellData("Riot Control", 50f, 1000f));
-
-		data.Books.Add(new PlayerData.BookData("Controlling", temp));
-	}
 
 	// disabled spells
-//		temp.Add(new PlayerData.BookData.SpellData("BALLOONS!", 60, 10000f));
 //		temp.Add(new PlayerData.BookData.SpellData("Demigod", 75, 10000f));
 //		temp.Add(new PlayerData.BookData.SpellData("Minion", 100, 30000f));
 }
