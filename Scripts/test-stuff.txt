@@ -1,0 +1,55 @@
+private class PlyData {
+	public IPlayer Player = null;
+	public IUser User = null;
+
+	private	float StartHealth = 100f;
+	private bool AbleToJump = true;
+	private float LastHeight = 0f;
+
+	public PlyData(IPlayer ply, IUser user, float startHealth){
+		this.Player = ply;
+		this.User = user;
+		this.StartHealth = startHealth;
+	}
+
+	public void CheckJumping(){
+		if (this.Player.IsInMidAir && this.AbleToJump && this.LastHeight < this.Player.GetWorldPosition().Y){
+			this.Player.SetLinearVelocity(new Vector2(0, 10));
+			this.AbleToJump = false;
+		} else if ((this.Player.IsOnGround || this.Player.IsLedgeGrabbing) && !this.AbleToJump) {
+			this.AbleToJump = true;
+		}
+
+		this.LastHeight = this.Player.GetWorldPosition().Y;
+	}
+}
+private List<PlyData> players = new List<PlyData>();
+
+public void OnStartup(){
+	foreach (IPlayer ply in Game.GetPlayers()){
+		players.Add(new PlyData(ply, ply.GetUser(), ply.GetHealth()));
+	}
+
+	CreateTimer(100, 0, "Tick_Mid", "");
+}
+
+public void Tick_Mid(TriggerArgs args) {
+	Tick_Controls();
+}
+
+private void Tick_Controls() {
+	foreach (PlyData data in players){
+		data.CheckJumping();
+	}
+}
+
+// =====< helpers >===== //
+
+private void CreateTimer(int interval, int count, string method, string id){
+	IObjectTimerTrigger timerTrigger = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+	timerTrigger.SetIntervalTime(interval);
+	timerTrigger.SetRepeatCount(count);
+	timerTrigger.SetScriptMethod(method);
+	timerTrigger.CustomId = id;
+	timerTrigger.Trigger();
+}
