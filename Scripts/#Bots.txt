@@ -1,0 +1,61 @@
+private class BotData {
+	private IPlayer Player = null;
+	private IPlayer Owner = null;
+
+	private	float StartHealth = 100f;
+
+	public BotData(IPlayer ply, IPlayer owner, float startHealth){
+		this.Player = ply;
+		this.StartHealth = startHealth;
+	}
+}
+
+private List<BotData> bots = new List<BotData>();
+
+// =====< THE CODE >===== //
+
+public void OnStartup(){
+	CreateTimer(500, 0, "Tick_Slow", "");
+}
+
+public void Tick_Slow(TriggerArgs args) {
+	Tick_Controls();
+	Tick_Bots();
+}
+
+private void Tick_Controls() {
+	foreach (IPlayer ply in Game.GetPlayers()){
+		if (ply.IsWalking && ply.IsBlocking)
+			SpawnBot(ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 35f, 0), ply, 100f);
+	}
+}
+
+private void Tick_Bots(){
+	
+	
+	for (int i = bots.Count - 1; i >= 0; i--){
+		BotData data = bots[i];
+
+		
+	}
+}
+
+private void SpawnBot(Vector2 pos, IPlayer owner, float health){
+	IPlayer bot = Game.CreatePlayer(pos);
+	bot.SetHealth(health);
+	Game.PlayEffect("Electric", pos + new Vector2(0, 8));
+	Game.PlayEffect("PWT", pos, owner.GetProfile().Name + " spawned me!");
+
+	bots.Add(new BotData(bot, owner, health));
+}
+
+// =====< helpers >===== //
+
+private void CreateTimer(int interval, int count, string method, string id){
+	IObjectTimerTrigger timerTrigger = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+	timerTrigger.SetIntervalTime(interval);
+	timerTrigger.SetRepeatCount(count);
+	timerTrigger.SetScriptMethod(method);
+	timerTrigger.CustomId = id;
+	timerTrigger.Trigger();
+}
