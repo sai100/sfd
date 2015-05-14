@@ -1,0 +1,241 @@
+//==================================================================//
+//============<   #DeathMatch GAMEMODE BY #OCTOTHORP  >=============//
+//============<                  v1.0                 >=============//
+//==================================================================//
+//========================< #DM - settings >========================//
+//============================<general>=============================//
+private const float RESPAWN_DELAY = (float) 3000;
+private const bool GIB_CORPSES_ON_RESPAWN = true;
+private const int KILLS_LIMIT = 10;
+//==================================================================//
+//=================< DO NOT TOUCH ANYTHING IN BELOW >===============//
+//==============< IF YOU'RE NOT SURE WHAT YOU'RE DOING >============//
+//==================================================================//
+
+private class PlyData {
+	private IPlayer Body = null;
+	private IUser User = null;
+	private PlayerTeam Team = PlayerTeam.Independent;
+	private	float RespawnTime = 0f;
+
+	public PlyData(IPlayer ply, IUser user, PlayerTeam team, float respawnTime){
+		this.Body = ply;
+		this.User = user;
+		this.Team = team;
+		this.RespawnTime = respawnTime;
+	}
+
+	public float GetRespawnTime() {return this.RespawnTime;}
+	public IPlayer GetBody() {return this.Body;}
+	public IUser GetUser() {return this.User;}
+	public PlayerTeam GetTeam() {return this.Team;}
+}
+
+private class ModData{
+	private string Version = "1.0";
+	public int Kills = 0;
+	// we'll add something else later
+
+	public string GetVersion() {return this.Version;}
+}
+
+string[] restrictedMaps = new string[]{
+	// these maps are hard-scripted, though their MapType is Versus
+	"#Abadoned Subway (BG)"
+};
+
+Random rand = new Random();
+private ModData modData = new ModData();
+private List<PlyData> spawnQueue = new List<PlyData>();
+private int usersAmount = 0;
+private int lastKills = 0;
+
+// =====< THE CODE >===== //
+
+public void OnStartup(){
+	// check if map is not hard-scripted so that scripts won't conflict
+	bool mapIsGood = true;
+	if (Game.GetMapType() == MapType.Custom) mapIsGood = false;
+	else foreach (string mapName in restrictedMaps) if (mapName == Game.MapName) mapIsGood = false;
+
+	if (mapIsGood){
+		Game.SetMapType(MapType.Custom);
+		usersAmount = Game.GetActiveUsers().Length;
+
+		// death trigger
+		IObjectTrigger deathTrigger = (IObjectTrigger)Game.CreateObject("OnPlayerDeathTrigger"); 
+		deathTrigger.SetScriptMethod("Death");
+
+		// tick triggers
+			// respawn tick trigger
+			CreateTimer(150, 0, "Tick_Respawn", "");
+
+			// check connected users tick trigger
+			CreateTimer(250, 0, "Tick_CheckUsers", "");
+
+			// check connected users tick trigger
+			CreateTimer(15000, 0, "Tick_CleanUp", "");
+
+		// some annotations
+		CheckGameOver();
+		ModMessage("v" + modData.GetVersion());
+	} else {
+		ModMessage("This map is restricted.");
+	}
+}
+
+public void Death(TriggerArgs args){
+	IPlayer ply = (IPlayer)args.Sender;
+	IUser user = ply.GetUser();
+
+	if (user != null && UserStillHere(user)){
+		spawnQueue.Add(new PlyData(ply, user, ply.GetTeam(), FromNow(RESPAWN_DELAY)));
+		modData.Kills ++;
+		//ModMessage(user.GetProfile().Name + " died!");
+	} else {
+		Game.PlayEffect("PWT", ply.GetWorldPosition(), "PLAYER LEFT");
+		Game.TriggerExplosion(ply.GetWorldPosition());
+		ply.Gib();
+	}
+	CheckGameOver();
+}
+
+public void Tick_Respawn(TriggerArgs args){
+	if (!Game.IsGameOver){
+		for (int i = spawnQueue.Count - 1; i >= 0; i--){
+			PlyData data = spawnQueue[i];
+
+			if (Game.TotalElapsedGameTime >= data.GetRespawnTime()){
+				// respawn player if user is here
+				if (UserStillHere(data.GetUser())){
+					SpawnPlayer(data.GetUser(), data.GetTeam());
+					//ModMessage(data.GetUser().GetProfile().Name + " spawned!");
+				}
+				// remove the corpse
+				if (data.GetBody() != null){
+					if (GIB_CORPSES_ON_RESPAWN) data.GetBody().Gib();
+					else data.GetBody().Remove();
+				}
+				// remove entry from spawning queue
+				spawnQueue.RemoveAt(i);
+			}
+		}
+	} else {
+		spawnQueue.Clear();
+		foreach (IPlayer ply in Game.GetPlayers()){
+			Game.TriggerExplosion(ply.GetWorldPosition());
+			ply.Gib();
+		}
+	}
+}
+
+public void Tick_CleanUp(TriggerArgs args){
+	IObject[] objectsToRemove = Game.GetObjectsByName(new string[]{
+		"GIBLET00", "GIBLET01", "GIBLET02", "GIBLET03", "GIBLET04"});
+	for (int i = 0; i < objectsToRemove.Length; i ++) objectsToRemove[i].Remove();
+}
+
+public void Tick_CheckUsers(TriggerArgs args){
+	if (usersAmount < Game.GetActiveUsers().Length){
+		foreach (IUser user in Game.GetActiveUsers()){
+			if (user.GetPlayer() == null){
+				bool justConnected = true;
+
+				foreach (PlyData data in spawnQueue)
+					if (data.GetUser().UserId == user.UserId) justConnected = false;
+
+				if (justConnected) spawnQueue.Add(new PlyData(null, user, TeamAutoChoose(), FromNow(5000f)));
+			}
+		}
+	}
+
+	usersAmount = Game.GetActiveUsers().Length;
+}
+
+private void SpawnPlayer(IUser user, PlayerTeam team){
+	IObject[] spawns = Game.GetObjectsByName("SpawnPlayer");
+	Vector2 spawnPos = spawns[rand.Next(spawns.Length)].GetWorldPosition();
+
+	IPlayer revivedPlayer = Game.CreatePlayer(spawnPos);
+	revivedPlayer.SetUser(user);
+	revivedPlayer.SetProfile(user.GetProfile());
+	revivedPlayer.SetTeam(team);
+
+	Game.PlayEffect("PWT", spawnPos, "Spawned!");
+	Game.PlayEffect("Electric", spawnPos + new Vector2(0, 8));
+	Game.PlaySound("ItemSpawn", spawnPos, 1f);
+
+	CheckGameOver();	
+}
+
+private void CheckGameOver(){
+	Color col = new Color(100,220,255);
+
+	if (modData.Kills != lastKills){
+		if ((KILLS_LIMIT - modData.Kills) % 10 == 0 && modData.Kills != KILLS_LIMIT)
+			ModMessage((KILLS_LIMIT - modData.Kills).ToString() + " kills remaining!");
+
+		switch (modData.Kills){
+			case KILLS_LIMIT - 5: ModMessage("5 kills remaining!"); break;
+			case KILLS_LIMIT - 1: ModMessage("Last kill remaining!"); break;
+		}
+	}
+
+	if (modData.Kills >= KILLS_LIMIT){
+		Game.SetGameOver("Kills limit reached");
+		Game.ShowPopupMessage("Total kills:  " + KILLS_LIMIT.ToString() + " / " + KILLS_LIMIT.ToString(), col);
+	} else {
+		Game.ShowPopupMessage("Total kills: " + modData.Kills.ToString() + " / " + KILLS_LIMIT.ToString(), col);
+	}
+
+	lastKills = modData.Kills;
+}
+
+// =====< helpers >===== //
+
+private void ModMessage(string text) {Game.RunCommand("/MSG #DeathMatch: " + text);}
+
+private float FromNow(float delay) {return Game.TotalElapsedGameTime + delay;}
+
+private bool UserStillHere(IUser user){
+	foreach (IUser usr in Game.GetActiveUsers())
+		if (usr.UserId == user.UserId) return true;
+	return false;
+}
+
+private PlayerTeam TeamAutoChoose(){
+	Dictionary<PlayerTeam, int> teams = new Dictionary<PlayerTeam, int>();
+
+	// create list of teams and amount of players in it
+	foreach (IUser user in Game.GetActiveUsers()){
+		if (user.GetPlayer() != null){
+			PlayerTeam team = user.GetPlayer().GetTeam();
+			if (teams.ContainsKey(team)) teams[team] ++;
+			else teams.Add(team, 1);
+		}
+	}
+
+	// find out the team with the least amount of players and return it
+	PlayerTeam minTeam = PlayerTeam.Independent;
+	int minTeamAmount = 8;
+	foreach (KeyValuePair<PlayerTeam,int> pair in teams){
+		if (pair.Value < minTeamAmount){
+			minTeamAmount = pair.Value;
+			minTeam = pair.Key;
+		}
+	}
+
+	if (teams.Count < 2 && !teams.ContainsKey(PlayerTeam.Independent))
+		Game.SetGameOver("Round restart needed!");
+
+	return minTeam;
+}
+
+private void CreateTimer(int interval, int count, string method, string id){
+	IObjectTimerTrigger timerTrigger = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+	timerTrigger.SetIntervalTime(interval);
+	timerTrigger.SetRepeatCount(count);
+	timerTrigger.SetScriptMethod(method);
+	timerTrigger.CustomId = id;
+	timerTrigger.Trigger();
+}
