@@ -1,61 +1,226 @@
-private class BotData {
-	private IPlayer Player = null;
-	private IPlayer Owner = null;
 
-	private	float StartHealth = 100f;
+// Project stalker... (it will take really long)
 
-	public BotData(IPlayer ply, IPlayer owner, float startHealth){
-		this.Player = ply;
-		this.StartHealth = startHealth;
+List<BotData> Bots = new List<BotData>();
+
+private class BotData{
+	public IPlayer Bot = null;
+	public Vector2 SafePos = Vector2.Zero;
+	public Vector2 Destination = Vector2.Zero;
+	public int WalkRadius = 3;
+	public bool Walking = true;
+	public bool CheckingPath = false;
+	public int Index = 42;
+	public int FacingPath = 0;
+	public bool DestinationReached = false;
+
+	public PathChecker AreaChecker = new PathChecker();
+	public List<Vector2> JumpSpots = new List<Vector2>();
+
+	public BotData(IPlayer bot){
+		this.Bot = bot;
+		this.SafePos = bot.GetWorldPosition();
+		this.FacingPath = (this.Destination.X - bot.GetWorldPosition().X) > 0f ? 1 : -1;
 	}
+
+	public class PathChecker{
+
+		public IObjectTrigger Checker = null;
+		public float TimeStamp = 0f;
+		public bool Jump = false;
+
+		public PathChecker(IObjectTrigger checker){
+			this.Checker = checker;
+		}
+
+		public PathChecker(){}
+	}
+
+	public BotData(){}
 }
 
-private List<BotData> bots = new List<BotData>();
-
-// =====< THE CODE >===== //
-
+Vector2 destination = Vector2.Zero; 
 public void OnStartup(){
-	CreateTimer(500, 0, "Tick_Slow", "");
-}
-
-public void Tick_Slow(TriggerArgs args) {
-	Tick_Controls();
-	Tick_Bots();
-}
-
-private void Tick_Controls() {
-	foreach (IPlayer ply in Game.GetPlayers()){
-		if (ply.IsWalking && ply.IsBlocking)
-			SpawnBot(ply.GetWorldPosition() + new Vector2(ply.FacingDirection * 35f, 0), ply, 100f);
+	foreach(IPlayer ply in Game.GetPlayers()){
 	}
+	CreateTimer(250, 0, "Tick", "", true);
 }
 
-private void Tick_Bots(){
-	
-	
-	for (int i = bots.Count - 1; i >= 0; i--){
-		BotData data = bots[i];
+public void Tick(TriggerArgs args){
+	Bot_Tick();
+	Control_Tick();
+}
 
+public void Bot_Tick(){
+	for(int i = 0; i<Bots.Count;i++){
+		Bots[i].Index = i;
+		Bots[i].FacingPath = (destination.X - Bots[i].Bot.GetWorldPosition().X) > 0f ? 1 : -1; 
+		Bots[i].Destination = destination;
+		if((Bots[i].SafePos - Bots[i].Bot.GetWorldPosition()).Length() < 154){
+			if(!Bots[i].DestinationReached){
+				if(!Bots[i].CheckingPath){
+					if(Bots[i].Walking){
+						CheckWalk(Bots[i]);
+					} else {
+						CheckJump(Bots[i]);
+					}
+					Bots[i].CheckingPath = true;
+				}
 		
+				IObjectTrigger areaChecker = Bots[i].AreaChecker.Checker;
+				if(Bots[i].AreaChecker.TimeStamp != 0 && Game.TotalElapsedGameTime - Bots[i].AreaChecker.TimeStamp >= 300f && !Bots[i].AreaChecker.Jump){
+					areaChecker.SetBodyType(BodyType.Static);
+					areaChecker.SetEnabled(false);
+					if(Bots[i].WalkRadius <= 2){
+						Bots[i].Walking = false;
+					}
+					Bots[i].WalkRadius --;
+					Bots[i].AreaChecker.TimeStamp = 0f;
+					Bots[i].CheckingPath = false;
+				}
+				if(Bots[i].AreaChecker.TimeStamp != 0 && Game.TotalElapsedGameTime - Bots[i].AreaChecker.TimeStamp >= 800f && Bots[i].AreaChecker.Jump){
+					areaChecker.SetBodyType(BodyType.Static);
+					areaChecker.SetEnabled(false);
+					Bots[i].AreaChecker.Jump = false;
+					Bots[i].Walking = true;
+					Bots[i].WalkRadius = 3;
+				}
+				string index = i.ToString();
+				if(Bots[i].JumpSpots.Count > 0){
+					if((Bots[i].Bot.GetWorldPosition() - Bots[i].JumpSpots[0]).Length() < 12f){
+						Bots[i].Bot.SetLinearVelocity(new Vector2(Bots[i].FacingPath*2.25f, 8f));
+						Game.PlaySound("PlayerJump", Bots[i].JumpSpots[0], 1f);
+						Bots[i].JumpSpots.Remove(Bots[i].JumpSpots[0]);
+						Bots[i].Bot.RunToPosition(Bots[i].SafePos + new Vector2(6f*Bots[i].FacingPath,0f), Bots[i].FacingPath);
+					}
+				} else
+					Bots[i].Bot.RunToPosition(Bots[i].SafePos + new Vector2(6f*Bots[i].Bot.FacingDirection,0f), Bots[i].Bot.FacingDirection);
+			} else
+				Bots[i].Bot.RunToPosition(Bots[i].SafePos + new Vector2(5f*Bots[i].Bot.FacingDirection,0f), Bots[i].Bot.FacingDirection);
+
+			if((Bots[i].SafePos - Bots[i].Destination).Length() < 16 || Bots[i].SafePos.Y - Bots[i].Bot.GetWorldPosition().Y > 50f){
+				Bots[i].SafePos = Bots[i].Destination;
+				Bots[i].DestinationReached = true;
+				Bots[i].Bot.RunToPosition(Bots[i].SafePos + new Vector2(4.5f*Bots[i].FacingPath,0f), Bots[i].Bot.FacingDirection);
+				//Bots[i].Bot.SetBotType(BotType.TutorialA);
+				Bots[i].AreaChecker.Checker.SetBodyType(BodyType.Static);
+				Bots[i].AreaChecker.Checker.SetEnabled(false);
+			} else {
+				Bots[i].DestinationReached = false;
+				Bots[i].Bot.SetBotType(BotType.None);
+			}
+		} else if(Bots[i].Bot.GetWorldPosition().Y - Bots[i].SafePos.Y < -150f || Bots[i].Bot.GetWorldPosition().Y - Bots[i].SafePos.Y > 150f){
+			Bots[i].SafePos = Bots[i].Bot.GetWorldPosition();
+		}
+		if(Bots[i].Bot == null){
+			Bots.Remove(Bots[i]);
+		}
 	}
 }
 
-private void SpawnBot(Vector2 pos, IPlayer owner, float health){
-	IPlayer bot = Game.CreatePlayer(pos);
-	bot.SetHealth(health);
-	Game.PlayEffect("Electric", pos + new Vector2(0, 8));
-	Game.PlayEffect("PWT", pos, owner.GetProfile().Name + " spawned me!");
-
-	bots.Add(new BotData(bot, owner, health));
+public void Control_Tick(){
+	foreach(IPlayer ply in Game.GetPlayers()){
+		if(ply.IsWalking && (ply.IsMeleeAttacking || ply.IsJumpAttacking) && Bots.Count < 10){
+			BotSpawn(ply.GetWorldPosition() + new Vector2(50f, 0f)* ply.FacingDirection, -ply.FacingDirection);
+		}
+		if(ply.IsWalking && ply.IsBlocking && !ply.IsBot){
+			destination = ply.GetWorldPosition();
+			foreach(IObject spot in Game.GetObjectsByName("Spotlight00A"))
+				spot.Remove();
+			Game.CreateObject("Spotlight00A", ply.GetWorldPosition() + new Vector2(0f, 40f), 0f);
+		}
+	}
 }
 
-// =====< helpers >===== //
+private void CheckWalk(BotData data){
+	IObjectTrigger areaChecker = data.AreaChecker.Checker;
+	if(data.AreaChecker.Checker == null){
+		areaChecker = (IObjectTrigger)Game.CreateObject("AreaTrigger", data.Bot.GetWorldPosition(), ((float)3.1415/4));
+		areaChecker.SetScriptMethod("Freeze_Checker");
+		areaChecker.CustomId = data.Index.ToString();
+		areaChecker.SetBodyType(BodyType.Static);
+		Bots[data.Index].AreaChecker = new BotData.PathChecker(areaChecker);
+	}
+	Vector2 pos = data.SafePos;
+	int radius = data.FacingPath < 0 ? -data.WalkRadius : data.WalkRadius;
+	areaChecker.SetBodyType(BodyType.Dynamic);
+	areaChecker.SetEnabled(true);
+	areaChecker.SetWorldPosition(new Vector2(pos.X + radius*8, pos.Y));
+	//((IObject)Game.CreateObject("BgAcid00A", new Vector2(pos.X + radius*7, pos.Y), ((float)3.1415/4))).SetBodyType(BodyType.Dynamic);
+	areaChecker.SetLinearVelocity(new Vector2(0f, -5f));
+	Bots[data.Index].AreaChecker.TimeStamp = Game.TotalElapsedGameTime;
+}
 
-private void CreateTimer(int interval, int count, string method, string id){
+private void CheckJump(BotData data){
+	IObjectTrigger areaChecker = data.AreaChecker.Checker;
+	Vector2 pos = data.SafePos;
+	areaChecker.SetBodyType(BodyType.Dynamic);
+	areaChecker.SetEnabled(true);
+	areaChecker.SetWorldPosition(new Vector2(pos.X + data.FacingPath*32f, pos.Y + 48f));
+	areaChecker.SetLinearVelocity(new Vector2(0f, -5f));
+	//((IObject)Game.CreateObject("LightBulb00", new Vector2(pos.X + data.FacingPath*32f, pos.Y + 48f), ((float)3.1415/4))).SetLinearVelocity(new Vector2(0f, -5f));
+	Bots[data.Index].AreaChecker.Jump = true;
+	Bots[data.Index].AreaChecker.TimeStamp = Game.TotalElapsedGameTime;
+}
+
+public void Freeze_Checker(TriggerArgs args){
+	if(args.Sender == null && (((IObject)args.Sender).CustomId != "" || ((IObject)args.Sender).Name == "AreaTrigger")){
+
+	} else {
+		Floor_Found(args);
+	}
+}
+
+public void Floor_Found(TriggerArgs args){
+	if(args.Sender is IObject && ((IObject)args.Sender).CustomId == ""){
+		IObjectTrigger caller = (IObjectTrigger)args.Caller;
+		IObject sender = (IObject)args.Sender;
+		int ind = Convert.ToInt32(caller.CustomId.Substring(0,1));
+		//float angle = caller.GetAngle() > 0 ? caller.GetAngle() : -caller.GetAngle();
+		caller.SetEnabled(false);
+		caller.SetBodyType(BodyType.Static);
+		Bots[ind].CheckingPath = false;
+		if(Bots[ind].AreaChecker.Jump && caller.GetWorldPosition().Y > sender.GetWorldPosition().Y && (sender.GetWorldPosition().Y - Bots[ind].Bot.GetWorldPosition().Y) > -24f){
+			Bots[ind].AreaChecker.Jump = false;
+			Bots[ind].JumpSpots.Add(Bots[ind].SafePos);
+			Bots[ind].SafePos = caller.GetWorldPosition() + new Vector2(0f, 4f);
+			Game.CreateObject("BgCarnivalLight00B", caller.GetWorldPosition(), ((float)3.1415/4));
+			Bots[ind].Walking = true;
+			Bots[ind].WalkRadius = 3;
+		} else if((caller.GetWorldPosition().Y - Bots[ind].Bot.GetWorldPosition().Y) < 50f && caller.GetWorldPosition().Y > sender.GetWorldPosition().Y){
+			Bots[ind].SafePos = caller.GetWorldPosition() - new Vector2(0f, -4f);
+			Game.CreateObject("BgCarnivalLight02A", caller.GetWorldPosition(), 0f);
+		} else Game.PlayEffect("PWT", Bots[ind].Bot.GetWorldPosition(), "Uhhg hoo, I got Stuck!!");
+	}
+}
+
+public void DaButt(TriggerArgs args){
+	IObject caller = (IObject)args.Caller;
+	IPlayer sender = (IPlayer)args.Sender;
+	IObject butt = Game.CreateObject("Button00", caller.GetWorldPosition(), 4f);
+	butt.SetBodyType(BodyType.Dynamic);
+	butt.SetLinearVelocity(new Vector2(2.25f, 8f));
+	for(int i=0;i<11;i++)
+		Game.WriteToConsole(sender.GetLinearVelocity().ToString());
+}
+
+//-Ze Helpers-//
+
+private IPlayer BotSpawn(Vector2 pos, int facingDirection){
+	IPlayer bot = Game.CreatePlayer(pos);
+	bot.RunToPosition(bot.GetWorldPosition(), facingDirection);
+	Game.PlayEffect("PWT", pos, "Hello!!");
+	Bots.Add(new BotData(bot));
+	return bot;
+}
+
+private IObjectTimerTrigger CreateTimer(int interval, int count, string method, string id, bool trigger){
 	IObjectTimerTrigger timerTrigger = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
 	timerTrigger.SetIntervalTime(interval);
 	timerTrigger.SetRepeatCount(count);
 	timerTrigger.SetScriptMethod(method);
 	timerTrigger.CustomId = id;
-	timerTrigger.Trigger();
+	if(trigger)
+		timerTrigger.Trigger();
+	return timerTrigger;
 }
