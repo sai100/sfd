@@ -373,14 +373,14 @@ private void Tick_Controls(){
 			if (data.MagicMode){
 				data.MagicMode = false;
 				Game.PlayEffect(
-					"PWT",
+					"CFTXT",
 					ply.GetWorldPosition(),
 					"No spell"
 				);
 			} else {
 				data.MagicMode = true;
 				Game.PlayEffect(
-					"PWT",
+					"CFTXT",
 					ply.GetWorldPosition(),
 					data.Books[data.BookId].Spells[data.SpellId].Name +
 						" (" + ((int)data.Books[data.BookId].Spells[data.SpellId].ManaCost).ToString() + //", " +
@@ -422,7 +422,7 @@ private void Tick_Controls(){
 		if (bookChanged){
 			data.SpellId = 0;
 			Game.PlayEffect(
-				"PWT",
+				"CFTXT",
 				ply.GetWorldPosition() + new Vector2(0f, 2f),
 				data.Books[data.BookId].Name + " book"
 			);
@@ -454,7 +454,7 @@ private void Tick_Controls(){
 					else data.SpellId --;
 				// show information of chosen spell
 				Game.PlayEffect(
-					"PWT",
+					"CFTXT",
 					ply.GetWorldPosition(),
 					data.Books[data.BookId].Spells[data.SpellId].Name +
 						" (" + ((int)data.Books[data.BookId].Spells[data.SpellId].ManaCost).ToString() + //", " +
@@ -473,12 +473,12 @@ private void Tick_Controls(){
 				if (spellData.LastUseTime + spellData.Cooldown <= Game.TotalElapsedGameTime){
 					if (data.Mana >= spellData.ManaCost) SpellUsed(data);
 					// insufficient mana
-					else Game.PlayEffect("PWT", ply.GetWorldPosition(), "No mana");
+					else Game.PlayEffect("CFTXT", ply.GetWorldPosition(), "No mana");
 				} else {
 					// cooldown is active
 					int cooldownLeft = ((int)(((spellData.LastUseTime + spellData.Cooldown) - Game.TotalElapsedGameTime + 500f) / 1000));
 					if (cooldownLeft > 0)
-						Game.PlayEffect("PWT",
+						Game.PlayEffect("CFTXT",
 							ply.GetWorldPosition(),
 							cooldownLeft.ToString() + " sec"
 							);
@@ -743,7 +743,7 @@ private void SpellUsed(PlayerData data){
 			float healAmount = 6f;
 			if (ply.GetHealth() >= 50f){
 				usedNow = false;
-				Game.PlayEffect("PWT", ply.GetWorldPosition(), "Health full!");
+				Game.PlayEffect("CFTXT", ply.GetWorldPosition(), "Health full!");
 			} else if (ply.GetHealth() > 50f - healAmount)
 				data.AddedHealth += 50f - ply.GetHealth();
 			else data.AddedHealth += healAmount;
@@ -913,14 +913,14 @@ private void SpellUsed(PlayerData data){
 		switch ( rand.Next(35)) {
 			case 0 : {
 				Game.SpawnProjectile (ProjectileItem.SNIPER, posCard, new Vector2(ply.FacingDirection,0f));
-				Game.PlayEffect("PWT", ply.GetWorldPosition(), "The fool");
+				Game.PlayEffect("CFTXT", ply.GetWorldPosition(), "The fool");
 				Game.PlaySound("Flaregun", ply.GetWorldPosition(), 50f);
 				Game.PlayEffect("Electric", ply.GetWorldPosition() + new Vector2(0, 8f));
 				break;
 			}
 			case 1 : {
 				Game.SpawnProjectile (ProjectileItem.REVOLVER, posCard, new Vector2(ply.FacingDirection,0f));
-				Game.PlayEffect("PWT", ply.GetWorldPosition(), "The magician");
+				Game.PlayEffect("CFTXT", ply.GetWorldPosition(), "The magician");
 				Game.PlaySound("ItemSpawn", ply.GetWorldPosition(), 50f);
 				usedNow = false;
 				data.Mana += 10;
@@ -930,7 +930,7 @@ private void SpellUsed(PlayerData data){
 			}
 			case 2 : {
 				Game.SpawnProjectile (ProjectileItem.REVOLVER, posCard, new Vector2(ply.FacingDirection,0f));
-				Game.PlayEffect("PWT", ply.GetWorldPosition(), "The judgment");
+				Game.PlayEffect("CFTXT", ply.GetWorldPosition(), "The judgment");
 				Game.PlaySound("ElevatorDing", ply.GetWorldPosition(), 50f);
 				Game.PlaySound("FootstepPiano", ply.GetWorldPosition(), 50f);
 				float healAmount = 9f;
@@ -981,7 +981,7 @@ private void SpellUsed(PlayerData data){
 		Game.TriggerExplosion(ply.GetWorldPosition() + new Vector2(ply.FacingDirection*100, 0f));
 		break;*/
 	default:
-		Game.PlayEffect("PWT", ply.GetWorldPosition(), "SHIT, ERROR!!!");
+		Game.PlayEffect("CFTXT", ply.GetWorldPosition(), "SHIT, ERROR!!!");
 		break;
 	}
 
@@ -1183,10 +1183,10 @@ public void SpellTrigger_Revive(TriggerArgs args){
 				GetPlayerData(revivedPlayer).StartHealth = health;
 				GetPlayerData(revivedPlayer).Player = revivedPlayer;
 
-				Game.PlayEffect("PWT", revivedPlayer.GetWorldPosition(), "REVIVE!");
+				Game.PlayEffect("CFTXT", revivedPlayer.GetWorldPosition(), "REVIVE!");
 				Game.PlayEffect("Electric", revivedPlayer.GetWorldPosition());
 				} else {
-					Game.PlayEffect("PWT", ply.GetWorldPosition(), "Player left!");
+					Game.PlayEffect("CFTXT", ply.GetWorldPosition(), "Player left!");
 					ply.Gib();
 				}
 
@@ -1259,7 +1259,7 @@ private void Tick_Spell_MindControl(){
 					controller.Kill();
 				}
 			} else {
-				Game.PlayEffect("PWT", victPlayer.GetWorldPosition(), "Cannot exit\ndead body");
+				Game.PlayEffect("CFTXT", victPlayer.GetWorldPosition(), "Cannot exit\ndead body");
 			}
 
 			controlledPlayers.RemoveAt(i);
@@ -1278,7 +1278,7 @@ public void SpellTrigger_Teleport(TriggerArgs args){
 				if (pendingTeleports[i].Trigger == trig){
 					pendingTeleports[i].Trigger.Remove();
 					pendingTeleports[i].Allowed = false;
-					Game.PlayEffect("PWT", pendingTeleports[i].Player.GetWorldPosition(), "Can't teleport");
+					Game.PlayEffect("CFTXT", pendingTeleports[i].Player.GetWorldPosition(), "Can't teleport");
 					for (int j = 0; j < 15; j++) Game.PlayEffect("TR_D", pendingTeleports[i].Position + new Vector2(rand.Next(-6,6), rand.Next(-6,6)));
 				}
 			}
@@ -1308,7 +1308,7 @@ public void SpellTrigger_PoisonLight(TriggerArgs args){
 		if (((IPlayer)args.Sender).GetUser() != null && !((IPlayer)args.Sender).IsDead){
 			PlayerData data = GetPlayerData((IPlayer)args.Sender);
 			data.Poison = 20f;
-			Game.PlayEffect("PWT",((IPlayer)args.Sender).GetWorldPosition(),"POISONED!");
+			Game.PlayEffect("CFTXT",((IPlayer)args.Sender).GetWorldPosition(),"POISONED!");
 		}
 	}
 }
