@@ -446,7 +446,7 @@ private void RevivePlayer(IPlayer body, IPlayer reviver, IUser user, PlayerTeam 
 	revivedPlayer.SetHealth(health);
 	revivedPlayer.SetTeam(team);
 	body.Remove();
-	Game.PlayEffect("PWT", revivedPlayer.GetWorldPosition(), "REVIVE!");
+	Game.PlayEffect("CFTXT", revivedPlayer.GetWorldPosition(), "REVIVE!");
 
 	if (HARDCORE_ACTIVATED) players.Add(new PlayerData(health, revivedPlayer.GetUser(), revivedPlayer, false));
 	if (COMMENT_ACTIVATED) TypingMachine_Print("revive" , new string[] {revivedPlayer.GetProfile().Name, reviver.GetProfile().Name});
@@ -541,7 +541,7 @@ private void Tick_Hardcore_Main(){
 				data.Body.SetHealth(data.StartHealth - damage + data.HealthAdded);
 				if (HC_BLEEDING && damage_causingBleed - data.LastDamage > (float)HC_BLEEDING_TRIGGER_HP && rand.Next(HC_BLEEDING_CHANCE) == 0){ 
 					data.IsBleeding = true;
-					Game.PlayEffect("PWT", data.Body.GetWorldPosition(), "BLEEDING!");
+					Game.PlayEffect("CFTXT", data.Body.GetWorldPosition(), "BLEEDING!");
 				} if (HC_CANT_PUT_FIRE_OFF && stats.TotalFireDamageTaken != 0) data.WasSetOnFire = true;
 				data.LastHealth = data.Body.GetHealth();
 				data.LastDamage = damage_causingBleed;
